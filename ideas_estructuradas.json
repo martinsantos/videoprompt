@@ -1,0 +1,70 @@
+{
+  "ideas_video": [
+    {
+      "titulo": "Transición de Estaciones",
+      "metadatos": {
+        "duracion_total": "30s",
+        "orientacion": "horizontal",
+        "tipo": "time_lapse_artistico"
+      },
+      "descripcion": "Un elemento que transcurre entre temporadas con nieve, otoño, calor, etc.",
+      "elementos_clave": ["árbol", "paisaje", "cambio_climático"],
+      "audio": {
+        "musica": "ambiental_suave",
+        "efectos": ["viento", "cambio_estaciones"]
+      }
+    },
+    {
+      "titulo": "París en Mayo del 68",
+      "metadatos": {
+        "duracion_total": "45s",
+        "orientacion": "horizontal",
+        "tipo": "drama_historico"
+      },
+      "descripcion": "Pase lloviendo por el París de mayo de 1968",
+      "elementos_clave": ["lluvia", "adoquines", "pancartas", "humo"],
+      "audio": {
+        "musica": "jazz_frances",
+        "efectos": ["lluvia", "murmullos"]
+      }
+    },
+    {
+      "titulo": "El Deterioro",
+      "metadatos": {
+        "duracion_total": "2-3 min",
+        "orientacion": "cuadrada",
+        "tipo": "retrato_psicologico"
+      },
+      "descripcion": "Descripción detallada del deterioro de un recluso en prisión",
+      "elementos_clave": ["ojos", "marcas_de_tiempo", "rejas"],
+      "audio": {
+        "musica": "tensión_creciente",
+        "efectos": ["rejas_cerrando", "reloj"]
+      }
+    },
+    {
+      "titulo": "Historias Objetuales",
+      "metadatos": {
+        "duracion_total": "1 min",
+        "orientacion": "vertical",
+        "tipo": "narrativa_visual"
+      },
+      "descripcion": "Una historia contada a través de objetos cotidianos",
+      "objetos": [
+        {"nombre": "bici_vieja", "significado": "libertad_pasada"},
+        {"nombre": "paquete_puchos", "significado": "adicciones"}
+      ]
+    },
+    {
+      "titulo": "El Diputado y la Estafa",
+      "metadatos": {
+        "duracion_total": "3-5 min",
+        "orientacion": "horizontal",
+        "tipo": "documental_dramatizado"
+      },
+      "descripcion": "Un diputado investiga la estafa libra en EEUU",
+      "elementos_clave": ["documentos", "grabaciones", "testigos"],
+      "notas": "Incluir elementos educativos sobre la estafa libra"
+    }
+  ]
+}

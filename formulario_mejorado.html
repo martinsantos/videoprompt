@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generador de Videos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .scene-container { border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 20px; background-color: #f8f9fa; }
+        #jsonPreview { max-height: 300px; overflow-y: auto; font-size: 0.8rem; }
+        .form-section { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Generador de Videos</h1>
+        
+        <div class="row">
+            <!-- Formulario -->
+            <div class="col-lg-8">
+                <form id="videoForm">
+                    <!-- Metadatos -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-card-heading"></i> Metadatos</h3>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Título</label>
+                                <input type="text" class="form-control" id="titulo" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Duración</label>
+                                <input type="text" class="form-control" id="duracion" placeholder="30s" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Orientación</label>
+                                <select class="form-select" id="orientacion" required>
+                                    <option value="vertical">Vertical</option>
+                                    <option value="horizontal">Horizontal</option>
+                                    <option value="cuadrada">Cuadrada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estilo -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-palette"></i> Estilo</h3>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tono</label>
+                                <select class="form-select" id="tono" required>
+                                    <option value="kawaii">Kawaii</option>
+                                    <option value="dramatico">Dramático</option>
+                                    <option value="profesional">Profesional</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Público Objetivo</label>
+                                <input type="text" class="form-control" id="publico" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Escenas -->
+                    <div class="form-section">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3><i class="bi-collection-play"></i> Escenas</h3>
+                            <button type="button" class="btn btn-primary btn-sm" id="agregarEscena">
+                                <i class="bi-plus"></i> Agregar Escena
+                            </button>
+                        </div>
+                        <div id="escenasContainer"></div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="button" class="btn btn-secondary me-md-2" data-bs-toggle="modal" data-bs-target="#previewModal">
+                            <i class="bi-eye"></i> Vista Previa
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi-save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Vista Previa JSON -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="bi-code-slash"></i> JSON</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre id="jsonPreview" class="bg-light p-2 rounded"></pre>
+                        <button class="btn btn-sm btn-outline-primary w-100 mt-2" id="copiarJSON">
+                            <i class="bi-clipboard"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Vista Previa -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Vista Previa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="previewContent" class="bg-light p-3 rounded"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="descargarJSON">Descargar JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables
+        let escenaCounter = 0;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar primera escena
+            agregarEscena();
+            
+            // Actualizar vista previa cuando cambien los campos
+            document.querySelectorAll('input, select, textarea').forEach(element => {
+                element.addEventListener('change', actualizarVistaPrevia);
+                element.addEventListener('input', actualizarVistaPrevia);
+            });
+
+            // Manejar envío del formulario
+            document.getElementById('videoForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                guardarProyecto();
+            });
+
+            // Botones
+            document.getElementById('agregarEscena').addEventListener('click', agregarEscena);
+            document.getElementById('copiarJSON').addEventListener('click', copiarJSON);
+            document.getElementById('descargarJSON').addEventListener('click', descargarJSON);
+
+            // Actualizar vista previa inicial
+            actualizarVistaPrevia();
+        });
+
+        // Funciones
+        function agregarEscena() {
+            escenaCounter++;
+            const escenaId = `escena-${escenaCounter}`;
+            const escenaHTML = `
+                <div class="scene-container mt-3" id="${escenaId}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Escena ${escenaCounter}</h5>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarEscena('${escenaId}')">
+                            <i class="bi-trash"></i>
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control descripcion" rows="2" required></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Duración (segundos)</label>
+                            <input type="number" class="form-control duracion" value="5" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select tipo">
+                                <option value="introduccion">Introducción</option>
+                                <option value="desarrollo">Desarrollo</option>
+                                <option value="conclusion">Conclusión</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('escenasContainer').insertAdjacentHTML('beforeend', escenaHTML);
+            actualizarVistaPrevia();
+        }
+
+        function eliminarEscena(id) {
+            document.getElementById(id).remove();
+            actualizarVistaPrevia();
+        }
+
+        function actualizarVistaPrevia() {
+            const videoData = {
+                video: {
+                    metadatos: {
+                        titulo: document.getElementById('titulo').value,
+                        duracion: document.getElementById('duracion').value,
+                        orientacion: document.getElementById('orientacion').value
+                    },
+                    estilo: {
+                        tono: document.getElementById('tono').value,
+                        publico_objetivo: document.getElementById('publico').value
+                    },
+                    escenas: []
+                }
+            };
+
+            // Recopilar datos de las escenas
+            document.querySelectorAll('.scene-container').forEach((escena, index) => {
+                videoData.video.escenas.push({
+                    id: index + 1,
+                    descripcion: escena.querySelector('.descripcion').value,
+                    duracion: escena.querySelector('.duracion').value + 's',
+                    tipo: escena.querySelector('.tipo').value
+                });
+            });
+
+            // Mostrar vista previa
+            const preview = document.getElementById('jsonPreview');
+            const previewContent = document.getElementById('previewContent');
+            const jsonStr = JSON.stringify(videoData, null, 2);
+            preview.textContent = jsonStr;
+            if (previewContent) {
+                previewContent.textContent = jsonStr;
+            }
+        }
+
+        function guardarProyecto() {
+            // Aquí iría la lógica para guardar el proyecto
+            alert('Proyecto guardado correctamente');
+        }
+
+        function copiarJSON() {
+            const jsonStr = document.getElementById('jsonPreview').textContent;
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                alert('JSON copiado al portapapeles');
+            });
+        }
+
+        function descargarJSON() {
+            const jsonStr = document.getElementById('jsonPreview').textContent;
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'video_config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

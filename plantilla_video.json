@@ -1,0 +1,126 @@
+{
+  "video": {
+    "metadatos": {
+      "titulo": "Título del Video",
+      "duracion_total": "30s",
+      "orientacion": "vertical",
+      "resolucion": "1080x1920",
+      "fps": 30,
+      "tipo": "corto_creativo"
+    },
+    "estilo_general": {
+      "tono": "depende_del_tema",
+      "paleta_colores": ["#COLOR1", "#COLOR2", "#COLOR3"],
+      "energia": "media",
+      "publico_objetivo": "general"
+    },
+    "escenas": [
+      {
+        "id": 1,
+        "tiempo_inicio": "0s",
+        "tiempo_fin": "10s",
+        "duracion": "10s",
+        "descripcion": "Elemento que transcurre entre temporadas con nieve, otoño, calor, etc.",
+        "elementos": {
+          "ambientacion": {
+            "clima": ["nieve", "otoño", "calor"],
+            "transicion": "suave_entre_estaciones"
+          },
+          "efectos_visuales": ["time_lapse", "transicion_climatica"]
+        },
+        "audio": {
+          "musica": "ambiental_suave",
+          "efectos": ["viento", "transicion_temporal"]
+        }
+      },
+      {
+        "id": 2,
+        "tiempo_inicio": "10s",
+        "tiempo_fin": "20s",
+        "duracion": "10s",
+        "descripcion": "Paseo bajo la lluvia por el París de mayo de 1968",
+        "elementos": {
+          "localizacion": {
+            "lugar": "París",
+            "epoca": "Mayo 1968",
+            "clima": "lluvia"
+          },
+          "atmosfera": {
+            "iluminacion": "gris_lluvioso",
+            "sonido_ambiente": "lluvia_suave",
+            "referencias_historicas": ["protestas", "carteles", "pancartas"]
+          }
+        },
+        "audio": {
+          "musica": "jazz_frances_años_60",
+          "efectos": ["lluvia", "murmullos", "pasos_mojados"]
+        }
+      },
+      {
+        "id": 3,
+        "tiempo_inicio": "20s",
+        "tiempo_fin": "30s",
+        "duracion": "10s",
+        "descripcion": "Historia contada a través de objetos cotidianos",
+        "elementos": {
+          "objetos_principales": [
+            {
+              "nombre": "bici_vieja",
+              "estado": "desgastado",
+              "simbolismo": "paso_del_tiempo"
+            },
+            {
+              "nombre": "paquete_puchos",
+              "estado": "medio_usado",
+              "simbolismo": "adicciones"
+            }
+          ],
+          "estilo_narrativo": "voz_en_off_poetica"
+        },
+        "audio": {
+          "voz": {
+            "genero": "femenino",
+            "tono": "nostálgico",
+            "texto": "Cada objeto cuenta una historia..."
+          },
+          "efectos": ["eco_sutil", "música_ambiental"]
+        }
+      }
+    ],
+    "transiciones": [
+      {
+        "entre_escenas": [1, 2],
+        "tipo": "disolvencia_cruzada",
+        "duracion": "1s"
+      },
+      {
+        "entre_escenas": [2, 3],
+        "tipo": "corte_a_negro",
+        "duracion": "0.5s"
+      }
+    ],
+    "call_to_action": {
+      "texto": "¿Qué historia cuentan tus objetos?",
+      "posicion": "centro",
+      "tiempo_aparicion": "28s",
+      "duracion_visible": "2s",
+      "estilo": {
+        "fuente": "elegante",
+        "color": "#FFFFFF",
+        "sombra": "sutil"
+      }
+    },
+    "pista_audio": {
+      "musica_fondo": {
+        "archivo": "musica_ambiental.mp3",
+        "volumen": 0.6,
+        "fade_in": "2s",
+        "fade_out": "3s"
+      },
+      "efectos_sonido": {
+        "volumen_general": 0.7,
+        "sincronia": "manual"
+      }
+    }
+  }
+}

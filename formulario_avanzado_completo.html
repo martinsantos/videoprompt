@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador Avanzado de Videos - Buenas Prácticas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .scene-card { border-left: 4px solid #007bff; }
+        .color-preview { width: 30px; height: 30px; border-radius: 50%; display: inline-block; margin: 2px; }
+        .prompt-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .advanced-options { background: #e9ecef; padding: 10px; border-radius: 5px; }
+        .json-preview { background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', monospace; }
+        .nav-pills .nav-link.active { background-color: #007bff; }
+        .form-section { margin-bottom: 2rem; }
+        .help-text { font-size: 0.875rem; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="bi bi-camera-video"></i> Generador Avanzado de Videos</h2>
+                        <p class="mb-0 text-muted">Basado en mejores prácticas de Vertex AI</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Navigation Tabs -->
+                        <ul class="nav nav-pills mb-4" id="formTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="metadata-tab" data-bs-toggle="pill" data-bs-target="#metadata" type="button">Metadatos</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="style-tab" data-bs-toggle="pill" data-bs-target="#style" type="button">Estilo</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="scenes-tab" data-bs-toggle="pill" data-bs-target="#scenes" type="button">Escenas</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="audio-tab" data-bs-toggle="pill" data-bs-target="#audio" type="button">Audio</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="technical-tab" data-bs-toggle="pill" data-bs-target="#technical" type="button">Técnico</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="formTabsContent">
+                            <!-- Metadata Tab -->
+                            <div class="tab-pane fade show active" id="metadata" role="tabpanel">
+                                <div class="form-section">
+                                    <h4>Metadatos Básicos</h4>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Título del Video</label>
+                                            <input type="text" class="form-control" id="titulo" placeholder="Ej: Anuncio PocketNova">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Duración Total</label>
+                                            <input type="text" class="form-control" id="duracion_total" placeholder="12s">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Orientación</label>
+                                            <select class="form-select" id="orientacion">
+                                                <option value="portrait">Portrait (9:16)</option>
+                                                <option value="landscape">Landscape (16:9)</option>
+                                                <option value="square">Cuadrado (1:1)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Resolución</label>
+                                            <select class="form-select" id="resolucion">
+                                                <option value="1080x1920">1080x1920 (Portrait)</option>
+                                                <option value="1920x1080">1920x1080 (Landscape)</option>
+                                                <option value="1080x1080">1080x1080 (Square)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">FPS</label>
+                                            <select class="form-select" id="fps">
+                                                <option value="24">24 fps</option>
+                                                <option value="30" selected>30 fps</option>
+                                                <option value="60">60 fps</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Tipo de Video</label>
+                                            <select class="form-select" id="tipo">
+                                                <option value="anuncio_publicitario">Anuncio Publicitario</option>
+                                                <option value="corto_creativo">Corto Creativo</option>
+                                                <option value="tutorial">Tutorial</option>
+                                                <option value="promocional">Promocional</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Modelo IA</label>
+                                            <select class="form-select" id="modelo_ia">
+                                                <option value="vertex_ai_veo">Vertex AI Veo</option>
+                                                <option value="vertex_ai_imagen">Vertex AI Imagen</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h4>Configuración de Generación</h4>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Nivel de Detalle</label>
+                                            <select class="form-select" id="nivel_detalle">
+                                                <option value="alto">Alto</option>
+                                                <option value="medio">Medio</option>
+                                                <option value="bajo">Bajo</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Consistencia Temporal</label>
+                                            <select class="form-select" id="consistencia_temporal">
+                                                <option value="alta">Alta</option>
+                                                <option value="media">Media</option>
+                                                <option value="baja">Baja</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Suavidad Movimiento</label>
+                                            <select class="form-select" id="suavidad_movimiento">
+                                                <option value="alta">Alta</option>
+                                                <option value="media">Media</option>
+                                                <option value="baja">Baja</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Temperatura</label>
+                                            <input type="number" class="form-control" id="temperatura" min="0" max="1" step="0.1" value="0.7">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Style Tab -->
+                            <div class="tab-pane fade" id="style" role="tabpanel">
+                                <div class="form-section">
+                                    <h4>Estilo General</h4>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tono Visual</label>
+                                            <input type="text" class="form-control" id="tono" placeholder="kawaii vibrante joyful cartoon style">
+                                            <div class="help-text">Describe el estilo visual general del video</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Energía</label>
+                                            <select class="form-select" id="energia">
+                                                <option value="alta">Alta</option>
+                                                <option value="media">Media</option>
+                                                <option value="baja">Baja</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Público Objetivo</label>
+                                            <input type="text" class="form-control" id="publico_objetivo" placeholder="young gamers, families">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <label class="form-label">Referencias Artísticas</label>
+                                        <div id="referencias_artisticas">
+                                            <div class="input-group mb-2">
+                                                <input type="text" class="form-control" placeholder="3D animated Pixar style">
+                                                <button class="btn btn-outline-danger" type="button" onclick="removeReference(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addReference()">
+                                            <i class="bi bi-plus"></i> Agregar Referencia
+                                        </button>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label class="form-label">Paleta de Colores</label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Colores Primarios</label>
+                                                <div id="colores_primarios">
+                                                    <input type="color" class="form-control form-control-color" value="#FFB6C1">
+                                                    <input type="color" class="form-control form-control-color mt-1" value="#87CEEB">
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary btn-sm mt-1" onclick="addColor('colores_primarios')">+</button>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Colores Secundarios</label>
+                                                <div id="colores_secundarios">
+                                                    <input type="color" class="form-control form-control-color" value="#FFF8DC">
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary btn-sm mt-1" onclick="addColor('colores_secundarios')">+</button>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Colores de Acento</label>
+                                                <div id="colores_acentos">
+                                                    <input type="color" class="form-control form-control-color" value="#FF69B4">
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary btn-sm mt-1" onclick="addColor('colores_acentos')">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scenes Tab -->
+                            <div class="tab-pane fade" id="scenes" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h4>Configuración de Escenas</h4>
+                                    <button type="button" class="btn btn-primary" onclick="addScene()">
+                                        <i class="bi bi-plus"></i> Agregar Escena
+                                    </button>
+                                </div>
+                                <div id="scenes-container">
+                                    <!-- Scenes will be added dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Audio Tab -->
+                            <div class="tab-pane fade" id="audio" role="tabpanel">
+                                <div class="form-section">
+                                    <h4>Configuración de Audio</h4>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Estilo de Música</label>
+                                            <input type="text" class="form-control" id="musica_estilo" placeholder="uplifting electronic gaming music">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">BPM</label>
+                                            <input type="number" class="form-control" id="musica_bpm" value="120">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Tonalidad</label>
+                                            <select class="form-select" id="musica_key">
+                                                <option value="C major">C mayor</option>
+                                                <option value="G major">G mayor</option>
+                                                <option value="D major">D mayor</option>
+                                                <option value="A minor">A menor</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Technical Tab -->
+                            <div class="tab-pane fade" id="technical" role="tabpanel">
+                                <div class="form-section">
+                                    <h4>Configuración Técnica</h4>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Calidad de Render</label>
+                                            <select class="form-select" id="render_quality">
+                                                <option value="premium">Premium</option>
+                                                <option value="high">Alta</option>
+                                                <option value="medium">Media</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Motion Blur</label>
+                                            <select class="form-select" id="motion_blur">
+                                                <option value="natural">Natural</option>
+                                                <option value="enhanced">Mejorado</option>
+                                                <option value="disabled">Deshabilitado</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Anti-aliasing</label>
+                                            <select class="form-select" id="anti_aliasing">
+                                                <option value="high">Alto</option>
+                                                <option value="medium">Medio</option>
+                                                <option value="low">Bajo</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Profundidad Color</label>
+                                            <select class="form-select" id="color_depth">
+                                                <option value="10-bit">10-bit</option>
+                                                <option value="8-bit">8-bit</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-success me-2" onclick="generateJSON()">
+                                <i class="bi bi-code"></i> Generar JSON
+                            </button>
+                            <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#previewModal">
+                                <i class="bi bi-eye"></i> Vista Previa
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="exportJSON()">
+                                <i class="bi bi-download"></i> Exportar JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightbulb"></i> Guía de Buenas Prácticas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="guideAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cameraGuide">
+                                        Ángulos de Cámara
+                                    </button>
+                                </h2>
+                                <div id="cameraGuide" class="accordion-collapse collapse show">
+                                    <div class="accordion-body">
+                                        <small>
+                                            <strong>Plano General:</strong> Establece la ubicación<br>
+                                            <strong>Plano Medio:</strong> Perfecto para interacciones<br>
+                                            <strong>Primer Plano:</strong> Enfatiza emociones<br>
+                                            <strong>Movimiento Suave:</strong> Usa travellings para dinamismo
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Vista Previa JSON</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="jsonPreview" class="json-preview p-3 rounded" style="max-height: 500px; overflow-y: auto;"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="copyJSON()">
+                        <i class="bi bi-clipboard"></i> Copiar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="exportJSON()">
+                        <i class="bi bi-download"></i> Descargar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let sceneCounter = 0;
+
+        // Add artistic reference
+        function addReference() {
+            const container = document.getElementById('referencias_artisticas');
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            div.innerHTML = `
+                <input type="text" class="form-control" placeholder="Ej: Studio Ghibli color palette">
+                <button class="btn btn-outline-danger" type="button" onclick="removeReference(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeReference(button) {
+            button.parentElement.remove();
+        }
+
+        // Add color input
+        function addColor(containerId) {
+            const container = document.getElementById(containerId);
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.className = 'form-control form-control-color mt-1';
+            container.appendChild(input);
+        }
+
+        // Add scene
+        function addScene() {
+            sceneCounter++;
+            const container = document.getElementById('scenes-container');
+            const sceneDiv = document.createElement('div');
+            sceneDiv.className = 'card scene-card mb-3';
+            sceneDiv.innerHTML = `
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Escena ${sceneCounter}</h5>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeScene(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Tiempo Inicio</label>
+                            <input type="text" class="form-control" placeholder="0s">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Duración</label>
+                            <input type="text" class="form-control" placeholder="3s">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Prompt Principal</label>
+                            <textarea class="form-control" rows="2" placeholder="Descripción detallada de la escena..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="prompt-section mt-3">
+                        <h6>Elementos del Prompt</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Sujeto Principal</label>
+                                <textarea class="form-control" rows="2" placeholder="Descripción del personaje principal"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contexto/Ubicación</label>
+                                <textarea class="form-control" rows="2" placeholder="Descripción del ambiente"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Acción</label>
+                                <textarea class="form-control" rows="2" placeholder="Qué está sucediendo"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estilo Visual</label>
+                                <textarea class="form-control" rows="2" placeholder="Estilo artístico específico"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="advanced-options mt-3">
+                        <h6>Configuración de Cámara</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Movimiento</label>
+                                <select class="form-select">
+                                    <option value="static">Estática</option>
+                                    <option value="smooth_tracking">Seguimiento Suave</option>
+                                    <option value="drone_swoop">Barrido Drone</option>
+                                    <option value="whip_pan">Whip Pan</option>
+                                    <option value="push_in">Push In</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Composición</label>
+                                <select class="form-select">
+                                    <option value="medium_shot">Plano Medio</option>
+                                    <option value="close_up">Primer Plano</option>
+                                    <option value="wide_shot">Plano General</option>
+                                    <option value="extreme_close_up">Primerísimo Plano</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Transición</label>
+                                <select class="form-select">
+                                    <option value="smooth_cut">Corte Suave</option>
+                                    <option value="fade">Fundido</option>
+                                    <option value="whip_pan">Whip Pan</option>
+                                    <option value="snap_zoom">Snap Zoom</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(sceneDiv);
+        }
+
+        function removeScene(button) {
+            button.closest('.scene-card').remove();
+        }
+
+        // Generate JSON
+        function generateJSON() {
+            const videoData = {
+                video: {
+                    metadatos: {
+                        titulo: document.getElementById('titulo').value,
+                        duracion_total: document.getElementById('duracion_total').value,
+                        orientacion: document.getElementById('orientacion').value,
+                        resolucion: document.getElementById('resolucion').value,
+                        fps: parseInt(document.getElementById('fps').value),
+                        tipo: document.getElementById('tipo').value,
+                        modelo_ia: document.getElementById('modelo_ia').value
+                    },
+                    configuracion_generacion: {
+                        nivel_detalle: document.getElementById('nivel_detalle').value,
+                        consistencia_temporal: document.getElementById('consistencia_temporal').value,
+                        suavidad_movimiento: document.getElementById('suavidad_movimiento').value,
+                        temperatura: parseFloat(document.getElementById('temperatura').value)
+                    },
+                    estilo_general: {
+                        tono: document.getElementById('tono').value,
+                        energia: document.getElementById('energia').value,
+                        publico_objetivo: document.getElementById('publico_objetivo').value
+                    }
+                }
+            };
+
+            document.getElementById('jsonPreview').textContent = JSON.stringify(videoData, null, 2);
+            return videoData;
+        }
+
+        // Copy JSON to clipboard
+        function copyJSON() {
+            const jsonText = document.getElementById('jsonPreview').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('JSON copiado al portapapeles');
+            });
+        }
+
+        // Export JSON file
+        function exportJSON() {
+            const videoData = generateJSON();
+            const blob = new Blob([JSON.stringify(videoData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'video_config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            addScene(); // Add first scene by default
+        });
+    </script>
+</body>
+</html>
