@@ -316,8 +316,34 @@
                                     <h4><i class="bi bi-magic"></i> Generador de Videos SORA</h4>
                                     
                                     <div class="alert alert-info mb-4">
-                                        <h5><i class="bi bi-lightbulb"></i> Cómo usar este generador</h5>
-                                        <p class="mb-0">Crea videos con SORA de OpenAI siguiendo las mejores prácticas. Añade escenas, configura los ajustes y genera el JSON para usar con la API de SORA.</p>
+                                        <div class="d-flex">
+                                            <div class="flex-shrink-0 me-3">
+                                                <i class="bi bi-lightbulb fs-1 text-warning"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="alert-heading">Guía Rápida para SORA</h4>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6><i class="bi bi-1-circle"></i> Comienza con una escena</h6>
+                                                        <p class="small">Ya tienes una escena de ejemplo para empezar.</p>
+                                                        
+                                                        <h6><i class="bi bi-2-circle"></i> Añade más escenas</h6>
+                                                        <p class="small">Usa el botón "Añadir Escena" o <kbd>Ctrl+N</kbd>.</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6><i class="bi bi-3-circle"></i> Personaliza cada escena</h6>
+                                                        <p class="small">Ajusta duración, planos y movimientos.</p>
+                                                        
+                                                        <h6><i class="bi bi-4-circle"></i> Genera tu video</h6>
+                                                        <p class="small">Haz clic en "Generar JSON" o <kbd>Ctrl+Enter</kbd>.</p>
+                                                    </div>
+                                                </div>
+                                                <hr class="my-2">
+                                                <p class="mb-0 small">
+                                                    <i class="bi bi-lightbulb"></i> <strong>Consejo:</strong> Sé específico en las descripciones para obtener mejores resultados.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <!-- Storyboard Section -->
@@ -667,28 +693,60 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Bootstrap tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
             
-            // Add first scene by default
-            if (document.getElementById('sora-storyboard').children.length === 1) {
-                addSoraScene();
+            // Add first scene with example content when SORA tab is shown
+            const soraTab = document.querySelector('#sora-tab');
+            if (soraTab) {
+                soraTab.addEventListener('shown.bs.tab', function() {
+                    const storyboard = document.getElementById('sora-storyboard');
+                    if (storyboard && storyboard.children.length === 1 && 
+                        storyboard.firstElementChild.classList.contains('text-center')) {
+                        addSoraScene(true);
+                    }
+                });
             }
+            
+            // Set up keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Only trigger if we're in the SORA tab and not in an input/textarea
+                if (document.querySelector('#sora-tab.active') && 
+                    !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        generateSoraJSON();
+                        e.preventDefault();
+                    } else if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+                        addSoraScene();
+                        e.preventDefault();
+                    } else if (e.key === 'Escape') {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('soraHelpModal'));
+                        if (modal) modal.hide();
+                    }
+                }
+            });
+            
+            // Add help text to the first scene
+            setTimeout(() => {
+                const firstScene = document.querySelector('.sora-scene-container');
+                if (firstScene) {
+                    const helpText = document.createElement('div');
+                    helpText.className = 'alert alert-info mt-3';
+                    helpText.innerHTML = `
+                        <h5><i class="bi bi-lightbulb"></i> Consejo para comenzar</h5>
+                        <p class="mb-2">Completa los campos de la escena con detalles específicos:</p>
+                        <ul class="mb-0">
+                            <li><strong>Descripción:</strong> Incluye sujeto, acción y entorno</li>
+                            <li><strong>Duración:</strong> 3-5 segundos por escena funciona mejor</li>
+                            <li><strong>Plano y Movimiento:</strong> Selecciona opciones que mejoren tu historia</li>
+                        </ul>
+                    `;
+                    firstScene.after(helpText);
+                }
+            }, 500);
         });
-        
-        // Show loading overlay
-        function showLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'flex';
-                // Force reflow to enable animation
-                void overlay.offsetWidth;
-                overlay.style.opacity = '1';
-            }
-        }
 
-        // Hide loading overlay
         function hideLoading() {
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
