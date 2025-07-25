@@ -686,8 +686,153 @@
             container.appendChild(input);
         }
 
-        // SORA Storyboard Functions
-        let soraSceneCounter = 0;
+        // SORA Storyboard Functions - Global Scope
+        window.soraSceneCounter = 0;
+        
+        // Make functions globally available
+        window.addSoraScene = function() {
+            soraSceneCounter++;
+            const storyboard = document.getElementById('sora-storyboard');
+            
+            // Hide the empty state if it exists
+            const emptyState = storyboard.querySelector('.text-center');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const sceneId = `sora-scene-${soraSceneCounter}`;
+            const sceneHTML = `
+                <div class="card mb-3 sora-scene-card" id="${sceneId}">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h6 class="mb-0"><i class="bi bi-film"></i> Escena #${soraSceneCounter}</h6>
+                        <button type="button" class="btn-close" onclick="removeSoraScene('${sceneId}')"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Descripción de la Escena</label>
+                            <textarea class="form-control scene-description" rows="3" placeholder="Describe la escena en detalle, incluyendo sujeto, acción y ambiente..."></textarea>
+                            <div class="form-text small">Sé específico con acciones, iluminación y estilo visual</div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Duración (segundos)</label>
+                                <input type="number" class="form-control scene-duration" min="1" max="10" value="3">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Tipo de Toma</label>
+                                <select class="form-select">
+                                    <optgroup label="Planes Comunes">
+                                        <option value="closeup">Primer Plano (Close-up)</option>
+                                        <option value="medium" selected>Plano Medio (Medium)</option>
+                                        <option value="wide">Plano General (Wide)</option>
+                                        <option value="extreme-closeup">Primerísimo Primer Plano</option>
+                                        <option value="medium-closeup">Plano Medio Corto</option>
+                                        <option value="medium-long">Plano Americano</option>
+                                        <option value="full">Plano Entero</option>
+                                        <option value="long">Plano General Largo</option>
+                                        <option value="extreme-long">Plano General Extremo</option>
+                                    </optgroup>
+                                    <optgroup label="Ángulos">
+                                        <option value="eye-level">Nivel de los Ojos</option>
+                                        <option value="low-angle">Contrapicado</option>
+                                        <option value="high-angle">Picado</option>
+                                        <option value="dutch-angle">Ángulo Holandés</option>
+                                        <option value="over-shoulder">Sobre el Hombro</option>
+                                        <option value="pov">Punto de Vista</option>
+                                        <option value="aerial">Aéreo (Dron)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Movimiento de Cámara</label>
+                                <select class="form-select">
+                                    <optgroup label="Movimientos Básicos">
+                                        <option value="fixed" selected>Fija (Fixed)</option>
+                                        <option value="pan">Panorámica (Pan)</option>
+                                        <option value="tilt">Inclinación (Tilt)</option>
+                                        <option value="zoom">Zoom</option>
+                                        <option value="dolly">Travelling (Dolly)</option>
+                                        <option value="truck">Travelling Lateral (Truck)</option>
+                                    </optgroup>
+                                    <optgroup label="Movimientos Avanzados">
+                                        <option value="crane">Grúa (Crane)</option>
+                                        <option value="steadicam">Steadicam</option>
+                                        <option value="handheld">Cámara al Hombro</option>
+                                        <option value="gimbal">Gimbal</option>
+                                        <option value="drone">Dron</option>
+                                        <option value="slow-pan">Panorámica Lenta</option>
+                                        <option value="slow-zoom">Zoom Lento</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mt-3">
+                            <input class="form-check-input" type="checkbox" id="keyframe-${soraSceneCounter}">
+                            <label class="form-check-label" for="keyframe-${soraSceneCounter}">
+                                Marcar como punto clave (esta escena es importante en la narrativa)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            storyboard.insertAdjacentHTML('beforeend', sceneHTML);
+            
+            // Initialize tooltips for the new scene
+            const newScene = document.getElementById(sceneId);
+            const tooltipTriggerList = [].slice.call(newScene.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Scroll to the new scene
+            newScene.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            return sceneId;
+        };
+        
+        window.removeSoraScene = function(sceneId) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta escena?')) {
+                const scene = document.getElementById(sceneId);
+                if (scene) {
+                    // Add fade out effect
+                    scene.style.transition = 'opacity 0.3s ease';
+                    scene.style.opacity = '0';
+                    
+                    // Remove after animation completes
+                    setTimeout(() => {
+                        scene.remove();
+                        
+                        // Show empty state if no scenes left
+                        const storyboard = document.getElementById('sora-storyboard');
+                        if (storyboard.children.length === 0) {
+                            storyboard.innerHTML = `
+                                <div class="text-center text-muted py-5 border rounded">
+                                    <i class="bi bi-plus-circle fs-1 d-block mb-2"></i>
+                                    <p class="mb-3">No hay escenas. Añade una para comenzar.</p>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addSoraScene()">
+                                        <i class="bi bi-plus"></i> Añadir Escena
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            // Update scene numbers
+                            updateSceneNumbers();
+                        }
+                    }, 300);
+                }
+            }
+        };
+        
+        function updateSceneNumbers() {
+            const scenes = document.querySelectorAll('.sora-scene-card');
+            scenes.forEach((scene, index) => {
+                const header = scene.querySelector('.card-header h6');
+                if (header) {
+                    header.innerHTML = `<i class="bi bi-film"></i> Escena #${index + 1}`;
+                }
+            });
+        }
         
         // Initialize tooltips and event listeners
         document.addEventListener('DOMContentLoaded', function() {
@@ -939,8 +1084,6 @@
                     updateSceneNumbers();
                 }
             }, 300); // Match this with CSS transition duration
-        }
-            }
         }
 
         // Add scene
