@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Videos SORA</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .scene-card { 
+            border-left: 4px solid #007bff; 
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            transition: transform 0.2s ease-in-out;
+        }
+        .scene-card:hover {
+            transform: translateY(-2px);
+        }
+        .json-preview { 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            font-family: 'Courier New', monospace;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .form-section { margin-bottom: 2rem; }
+        .help-text { font-size: 0.875rem; color: #6c757d; }
+        .nav-pills .nav-link.active { background-color: #007bff; }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex justify-content-center align-items-center" style="z-index: 9999; display: none;">
+        <div class="text-center text-white">
+            <div class="spinner-border mb-3" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <h3>Procesando tu video...</h3>
+            <p class="mb-0">Esto puede tomar unos momentos</p>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h4 mb-0"><i class="bi bi-magic"></i> Generador de Videos con SORA</h2>
+            </div>
+            <div class="card-body">
+                <!-- Navigation Tabs -->
+                <ul class="nav nav-pills mb-4" id="formTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="sora-tab" data-bs-toggle="pill" data-bs-target="#sora" type="button">
+                            <i class="bi bi-magic"></i> Editor SORA
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="json-tab" data-bs-toggle="pill" data-bs-target="#json" type="button">
+                            <i class="bi bi-code"></i> JSON
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="formTabsContent">
+                    <!-- SORA Tab -->
+                    <div class="tab-pane fade show active" id="sora" role="tabpanel">
+                        <div class="form-section">
+                            <div class="alert alert-info">
+                                <h5><i class="bi bi-lightbulb"></i> Cómo usar este generador</h5>
+                                <p class="mb-0">Crea videos con SORA de OpenAI siguiendo las mejores prácticas. Añade escenas, configura los ajustes y genera el JSON para usar con la API de SORA.</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h4>Storyboard</h4>
+                                    <button type="button" class="btn btn-primary" onclick="addSoraScene()">
+                                        <i class="bi bi-plus"></i> Añadir Escena
+                                    </button>
+                                </div>
+                                
+                                <div id="sora-storyboard" class="mb-4">
+                                    <!-- Scenes will be added here -->
+                                    <div class="text-center text-muted py-5 border rounded">
+                                        <i class="bi bi-plus-circle fs-1 d-block mb-2"></i>
+                                        <p class="mb-3">Comienza añadiendo tu primera escena</p>
+                                        <button type="button" class="btn btn-outline-primary" onclick="addSoraScene()">
+                                            <i class="bi bi-plus"></i> Añadir Escena
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Número de Variaciones</label>
+                                        <input type="number" class="form-control" id="sora_variations" min="1" max="4" value="1">
+                                        <small class="text-muted">Número de versiones a generar (1-4)</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Estilo de Transición</label>
+                                        <select class="form-select" id="sora_transition">
+                                            <option value="smooth">Suave</option>
+                                            <option value="cut">Corte Seco</option>
+                                            <option value="fade">Fundido</option>
+                                            <option value="zoom">Zoom</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Duración Total (segundos)</label>
+                                        <input type="number" class="form-control" id="total_duration" min="1" max="60" value="20">
+                                        <small class="text-muted">Máximo 60 segundos</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5>Configuración Avanzada</h5>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Resolución</label>
+                                        <select class="form-select" id="resolution">
+                                            <option value="1920x1080">1920x1080 (Landscape)</option>
+                                            <option value="1080x1920">1080x1920 (Portrait)</option>
+                                            <option value="1080x1080">1080x1080 (Square)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Estilo Visual</label>
+                                        <select class="form-select" id="visual_style">
+                                            <option value="realistic">Realista</option>
+                                            <option value="cinematic">Cinematográfico</option>
+                                            <option value="animated">Animado</option>
+                                            <option value="illustration">Estilo Ilustración</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Calidad</label>
+                                        <select class="form-select" id="quality">
+                                            <option value="standard">Estándar</option>
+                                            <option value="hd">Alta Definición</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-between">
+                                <div>
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#helpModal">
+                                        <i class="bi bi-question-circle"></i> Ayuda
+                                    </button>
+                                </div>
+                                <div>
+                                    <button class="btn btn-primary" type="button" onclick="generateSoraJSON()" id="generateBtn">
+                                        <i class="bi bi-magic"></i> Generar JSON para SORA
+                                        <span class="ms-1 small">(Ctrl+Enter)</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Help Modal -->
+                            <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-xl">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="helpModalLabel"><i class="bi bi-question-circle"></i> Guía Rápida</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6><i class="bi bi-lightbulb"></i> Consejos para Mejores Resultados</h6>
+                                                    <ul>
+                                                        <li>Describe acciones específicas con sujeto, verbo y objeto</li>
+                                                        <li>Incluye detalles de iluminación, clima y ambiente</li>
+                                                        <li>Especifica movimientos de cámara (ej: "cámara en movimiento suave hacia adelante")</li>
+                                                        <li>Mantén las escenas enfocadas en una acción principal</li>
+                                                        <li>Usa adjetivos descriptivos para el estilo visual</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6><i class="bi bi-keyboard"></i> Atajos de Teclado</h6>
+                                                    <ul>
+                                                        <li><kbd>Ctrl+Enter</kbd>: Generar JSON</li>
+                                                        <li><kbd>Esc</kbd>: Cerrar ventanas emergentes</li>
+                                                        <li><kbd>Tab</kbd>: Navegar entre campos</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-4">
+                                                <h6><i class="bi bi-film"></i> Ejemplo de Escena Efectiva</h6>
+                                                <div class="bg-light p-3 rounded">
+                                                    <p class="mb-1 fw-bold">"Un dron vuela sobre un bosque otoñal al amanecer, capturando una neblina suave que se eleva entre los árboles. La cámara se mueve suavemente hacia adelante, revelando un río serpenteante. Estilo cinematográfico con colores cálidos y saturación suave."</p>
+                                                    <p class="mb-0 small text-muted">Duración: 5s | Tipo: Vista Aérea | Estilo: Cinematográfico</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- JSON Tab -->
+                    <div class="tab-pane fade" id="json" role="tabpanel">
+                        <div class="form-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>JSON Generado</h4>
+                                <div>
+                                    <button class="btn btn-outline-secondary btn-sm me-2" onclick="copyJSON()">
+                                        <i class="bi bi-clipboard"></i> Copiar
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="exportJSON()">
+                                        <i class="bi bi-download"></i> Exportar
+                                    </button>
+                                </div>
+                            </div>
+                            <pre id="jsonPreview" class="json-preview p-3 rounded">
+                                <!-- JSON will be displayed here -->
+                                <div class="text-muted text-center py-5">
+                                    <i class="bi bi-code-slash fs-1 d-block mb-2"></i>
+                                    <p>Genera el JSON para verlo aquí</p>
+                                </div>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let soraSceneCounter = 0;
+
+        // Add a new SORA scene
+        function addSoraScene() {
+            soraSceneCounter++;
+            const storyboard = document.getElementById('sora-storyboard');
+            const emptyState = storyboard.querySelector('.text-center');
+            
+            if (emptyState) {
+                storyboard.innerHTML = '';
+            }
+
+            const sceneId = `scene-${Date.now()}`;
+            const sceneHTML = `
+                <div class="card scene-card mb-3" id="${sceneId}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Escena ${soraSceneCounter}</h6>
+                        <button type="button" class="btn-close" aria-label="Eliminar escena" onclick="removeSoraScene('${sceneId}')"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label">Descripción de la Escena</label>
+                                    <textarea class="form-control" rows="3" placeholder="Describe en detalle lo que debe suceder en esta escena..."></textarea>
+                                    <small class="text-muted">Sé específico con acciones, movimientos y detalles visuales</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Duración (segundos)</label>
+                                    <input type="number" class="form-control scene-duration" min="1" max="20" value="3">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de Toma</label>
+                                    <select class="form-select">
+                                        <optgroup label="Planes Comunes">
+                                            <option value="closeup">Primer Plano (Close-up)</option>
+                                            <option value="medium" selected>Plano Medio (Medium)</option>
+                                            <option value="wide">Plano General (Wide)</option>
+                                        </optgroup>
+                                        <optgroup label="Planes Especiales">
+                                            <option value="extreme_closeup">Extremo Primer Plano (Extreme Close-up)</option>
+                                            <option value="aerial">Vista Aérea (Aerial)</option>
+                                            <option value="dutch_angle">Ángulo Holandés (Dutch Angle)</option>
+                                            <option value="over_the_shoulder">Sobre el Hombro (OTS)</option>
+                                            <option value="pov">Punto de Vista (POV)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="keyframe-${sceneId}">
+                                    <label class="form-check-label" for="keyframe-${sceneId}">Fotograma Clave</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label class="form-label">Referencia Visual (opcional)</label>
+                            <input type="file" class="form-control" accept="image/*,video/*">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            storyboard.insertAdjacentHTML('beforeend', sceneHTML);
+        }
+
+        // Remove a SORA scene
+        function removeSoraScene(sceneId) {
+            const scene = document.getElementById(sceneId);
+            if (scene) {
+                scene.remove();
+                
+                // Update scene numbers
+                const scenes = document.querySelectorAll('.scene-card');
+                if (scenes.length === 0) {
+                    // If no scenes left, show empty state
+                    const storyboard = document.getElementById('sora-storyboard');
+                    storyboard.innerHTML = `
+                        <div class="text-center text-muted py-5 border rounded">
+                            <i class="bi bi-plus-circle fs-1 d-block mb-2"></i>
+                            <p class="mb-3">Comienza añadiendo tu primera escena</p>
+                            <button type="button" class="btn btn-outline-primary" onclick="addSoraScene()">
+                                <i class="bi bi-plus"></i> Añadir Escena
+                            </button>
+                        </div>`;
+                } else {
+                    // Renumber remaining scenes
+                    scenes.forEach((scene, index) => {
+                        const header = scene.querySelector('.card-header h6');
+                        if (header) {
+                            header.textContent = `Escena ${index + 1}`;
+                        }
+                    });
+                    soraSceneCounter = scenes.length;
+                }
+            }
+        }
+
+        // Show loading overlay
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        // Hide loading overlay
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Validate scene data
+        function validateScenes() {
+            const scenes = document.querySelectorAll('.scene-card');
+            if (scenes.length === 0) {
+                alert('Por favor, añade al menos una escena');
+                return false;
+            }
+            
+            let isValid = true;
+            scenes.forEach((scene, index) => {
+                const textarea = scene.querySelector('textarea');
+                if (!textarea.value.trim()) {
+                    isValid = false;
+                    textarea.classList.add('is-invalid');
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    textarea.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                alert('Por favor, completa la descripción de todas las escenas');
+            }
+            
+            return isValid;
+        }
+
+        // Generate SORA-compatible JSON
+        function generateSoraJSON() {
+            // Validate before generating
+            if (!validateScenes()) {
+                return;
+            }
+            
+            showLoading();
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                const scenes = [];
+                const sceneElements = document.querySelectorAll('.scene-card');
+                
+                sceneElements.forEach((scene, index) => {
+                    const textarea = scene.querySelector('textarea');
+                    const duration = scene.querySelector('.scene-duration').value;
+                    const shotType = scene.querySelector('select').value;
+                    const isKeyframe = scene.querySelector('input[type="checkbox"]').checked;
+                    
+                    scenes.push({
+                        scene_number: index + 1,
+                        prompt: textarea.value || `Escena sin descripción ${index + 1}`,
+                        duration_seconds: parseInt(duration) || 3,
+                        shot_type: shotType,
+                        is_keyframe: isKeyframe,
+                        order: index
+                    });
+                });
+
+                const soraData = {
+                    version: "sora-1.0",
+                    metadata: {
+                        title: "Mi Video Generado",
+                        total_duration: document.getElementById('total_duration').value || 20,
+                        aspect_ratio: document.getElementById('resolution').value,
+                        visual_style: document.getElementById('visual_style').value,
+                        quality: document.getElementById('quality').value,
+                        variations: parseInt(document.getElementById('sora_variations').value) || 1,
+                        transition_style: document.getElementById('sora_transition').value,
+                        created_at: new Date().toISOString()
+                    },
+                    storyboard: scenes
+                };
+
+                // Display the JSON
+                displayJSON(soraData);
+                
+                // Switch to JSON tab
+                const jsonTab = new bootstrap.Tab(document.getElementById('json-tab'));
+                jsonTab.show();
+                
+                // Hide loading
+                hideLoading();
+                
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+                    <i class="bi bi-check-circle-fill"></i> ¡JSON generado con éxito!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.querySelector('#json').prepend(alertDiv);
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    const alert = bootstrap.Alert.getOrCreateInstance(alertDiv);
+                    alert.close();
+                }, 5000);
+                
+                return soraData;
+            }, 1000); // End of setTimeout
+        }
+
+        // Display formatted JSON
+        function displayJSON(data) {
+            const jsonPreview = document.getElementById('jsonPreview');
+            jsonPreview.textContent = JSON.stringify(data, null, 2);
+            
+            // Add syntax highlighting (simple version)
+            jsonPreview.innerHTML = jsonPreview.textContent
+                .replace(/"(\w+)":/g, '"<span style="color: #9cdcfe">$1</span>":')
+                .replace(/"([^"]+)"(?=:)/g, '"<span style="color: #ce9178">$1</span>"')
+                .replace(/(true|false)/g, '<span style="color: #569cd6">$1</span>')
+                .replace(/(\d+)/g, '<span style="color: #b5cea8">$1</span>');
+        }
+
+        // Copy JSON to clipboard
+        function copyJSON() {
+            const jsonPreview = document.getElementById('jsonPreview');
+            const jsonText = jsonPreview.textContent || jsonPreview.innerText;
+            
+            navigator.clipboard.writeText(jsonText).then(() => {
+                // Show copied feedback
+                const button = document.querySelector('button[onclick="copyJSON()"]');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check"></i> ¡Copiado!';
+                button.classList.add('btn-success');
+                button.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
+
+        // Export JSON to file
+        function exportJSON() {
+            const jsonPreview = document.getElementById('jsonPreview');
+            const jsonText = jsonPreview.textContent || jsonPreview.innerText;
+            
+            const blob = new Blob([jsonText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sora-video-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter to generate JSON
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                generateSoraJSON();
+            }
+            
+            // Esc to close modals
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal.show');
+                if (modals.length > 0) {
+                    const modal = bootstrap.Modal.getInstance(modals[0]);
+                    if (modal) modal.hide();
+                }
+            }
+        });
+        
+        // Initialize the form
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Initialize first tab
+            const firstTabEl = document.querySelector('#formTabs .nav-link');
+            if (firstTabEl) {
+                new bootstrap.Tab(firstTabEl).show();
+            }
+        });
+    </script>
+</body>
+</html>
