@@ -1337,27 +1337,38 @@
 
         // Generate JSON
         function generateJSON() {
+            // Helper function to safely get element value
+            const getValue = (id, isNumber = false) => {
+                const element = document.getElementById(id);
+                if (!element) {
+                    console.warn(`Element with ID '${id}' not found`);
+                    return isNumber ? 0 : '';
+                }
+                const value = element.value || '';
+                return isNumber ? parseFloat(value) || 0 : value;
+            };
+
             const videoData = {
                 video: {
                     metadatos: {
-                        titulo: document.getElementById('titulo').value,
-                        duracion_total: document.getElementById('duracion_total').value,
-                        orientacion: document.getElementById('orientacion').value,
-                        resolucion: document.getElementById('resolucion').value,
-                        fps: parseInt(document.getElementById('fps').value),
-                        tipo: document.getElementById('tipo').value,
-                        modelo_ia: document.getElementById('modelo_ia').value
+                        titulo: getValue('titulo'),
+                        duracion_total: getValue('duracion_total'),
+                        orientacion: getValue('orientacion'),
+                        resolucion: getValue('resolucion'),
+                        fps: getValue('fps', true),
+                        tipo: getValue('tipo'),
+                        modelo_ia: getValue('modelo_ia')
                     },
                     configuracion_generacion: {
-                        nivel_detalle: document.getElementById('nivel_detalle').value,
-                        consistencia_temporal: document.getElementById('consistencia_temporal').value,
-                        suavidad_movimiento: document.getElementById('suavidad_movimiento').value,
-                        temperatura: parseFloat(document.getElementById('temperatura').value)
+                        nivel_detalle: getValue('nivel_detalle'),
+                        consistencia_temporal: getValue('consistencia_temporal'),
+                        suavidad_movimiento: getValue('suavidad_movimiento'),
+                        temperatura: getValue('temperatura', true)
                     },
                     estilo_general: {
-                        tono: document.getElementById('tono').value,
-                        energia: document.getElementById('energia').value,
-                        publico_objetivo: document.getElementById('publico_objetivo').value
+                        tono: getValue('tono'),
+                        energia: getValue('energia'),
+                        publico_objetivo: getValue('publico_objetivo')
                     }
                 }
             };
