@@ -1784,16 +1784,44 @@
 
         // Export JSON file
         function exportJSON() {
-            const videoData = generateJSON();
-            const blob = new Blob([JSON.stringify(videoData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'video_config.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Show loading state
+            showLoadingOverlay('Preparando la exportación...');
+            
+            try {
+                // Generate the JSON data
+                const videoData = generateJSON();
+                
+                // Check if there was an error during generation
+                if (videoData === null) {
+                    showToast('error', 'Error', 'No se pudo generar el JSON. Por favor, corrige los errores del formulario.');
+                    hideLoadingOverlay();
+                    return;
+                }
+                
+                // Create and trigger download
+                const jsonString = JSON.stringify(videoData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `video-config-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Clean up
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    hideLoadingOverlay();
+                    showToast('success', 'Exportación exitosa', 'El archivo se ha descargado correctamente.');
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error al exportar JSON:', error);
+                hideLoadingOverlay();
+                showToast('error', 'Error', 'Ocurrió un error al exportar el archivo. Por favor, inténtalo de nuevo.');
+            }
         }
 
         // Form initialization is now handled at the top of the script
