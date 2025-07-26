@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        /* Base Styles */
         .scene-card { border-left: 4px solid #007bff; }
         .color-preview { width: 30px; height: 30px; border-radius: 50%; display: inline-block; margin: 2px; }
         .prompt-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; }
@@ -15,6 +16,193 @@
         .nav-pills .nav-link.active { background-color: #007bff; }
         .form-section { margin-bottom: 2rem; }
         .help-text { font-size: 0.875rem; color: #6c757d; }
+        
+        /* Step Indicator */
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #e9ecef;
+            z-index: 1;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+        
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 60%;
+            right: -40%;
+            height: 2px;
+            background-color: #e9ecef;
+            z-index: 1;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .step-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+            max-width: 100px;
+        }
+        
+        .step.active .step-circle {
+            background-color: #0d6efd;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .step.completed .step-circle {
+            background-color: #198754;
+            color: white;
+        }
+        
+        .step.completed::after {
+            background-color: #198754 !important;
+        }
+        
+        .step-indicator {
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Form Sections */
+        .form-section {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+        
+        /* Tooltips */
+        .tooltip-inner {
+            max-width: 300px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Help System */
+        .help-trigger {
+            cursor: pointer;
+            color: #0d6efd;
+            margin-left: 0.25rem;
+        }
+        
+        .help-content {
+            display: none;
+            background-color: #f8f9fa;
+            border-left: 3px solid #0d6efd;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.25rem;
+        }
+        
+        .help-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Audio Configuration Styles */
+        .audio-option {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .audio-option:hover {
+            box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Range Input Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+            margin: 1rem 0;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0d6efd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #0b5ed7;
+        }
+        
+        /* Form Section Styling */
+        .form-section {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        /* Input Focus Styles */
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        }
+        
+        /* Label Styles */
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Required Field Indicator */
+        .required:after {
+            content: " *";
+            color: #dc3545;
+        }
         
         /* Loading Overlay */
         #loadingOverlay {
@@ -66,10 +254,80 @@
     </style>
 </head>
 <body>
-    <div class="container-fluid py-4">
-        <div class="alert alert-info mb-4">
-            <h4><i class="bi bi-stars"></i> Optimizado para SORA de OpenAI</h4>
-            <p class="mb-0">Este formulario incluye configuraciones específicas para obtener los mejores resultados con SORA</p>
+    <!-- Welcome Screen -->
+    <div class="modal fade" id="welcomeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h2 class="modal-title"><i class="bi bi-stars"></i> Bienvenido al Generador de Videos</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-camera-video" style="font-size: 4rem; color: #0d6efd;"></i>
+                        <h3 class="mt-3">Crea videos increíbles en pocos pasos</h3>
+                        <p class="lead">Sigue esta guía paso a paso para generar el mejor contenido de video</p>
+                    </div>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                                        <i class="bi bi-1-circle fs-2 text-primary"></i>
+                                    </div>
+                                    <h5>Configuración Básica</h5>
+                                    <p class="text-muted small">Define los metadatos y el estilo general de tu video</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                                        <i class="bi bi-2-circle fs-2 text-primary"></i>
+                                    </div>
+                                    <h5>Crea tus Escenas</h5>
+                                    <p class="text-muted small">Añade y configura cada escena de tu video</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                                        <i class="bi bi-3-circle fs-2 text-primary"></i>
+                                    </div>
+                                    <h5>Genera y Exporta</h5>
+                                    <p class="text-muted small">Obtén tu JSON listo para usar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                        <button type="button" class="btn btn-primary btn-lg px-4 gap-3" onclick="startGuidedTour()">
+                            <i class="bi bi-compass"></i> Guía Paso a Paso
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-lg px-4" data-bs-dismiss="modal">
+                            <i class="bi bi-arrow-right"></i> Ir al Formulario
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress sticky-top" style="height: 6px; display: none;" id="progressBar">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+    </div>
+
+    <div class="container-fluid py-4" id="mainContent" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0"><i class="bi bi-magic me-2"></i> Generador de Videos</h1>
+            <button class="btn btn-outline-primary" onclick="showHelp()">
+                <i class="bi bi-question-circle"></i> Ayuda
+            </button>
         </div>
         <div class="row">
             <div class="col-lg-8">
@@ -79,33 +337,257 @@
                         <p class="mb-0 text-muted">Basado en mejores prácticas de Vertex AI</p>
                     </div>
                     <div class="card-body">
-                        <!-- Navigation Tabs -->
-                        <ul class="nav nav-pills mb-4" id="formTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="metadata-tab" data-bs-toggle="pill" data-bs-target="#metadata" type="button">Metadatos</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="style-tab" data-bs-toggle="pill" data-bs-target="#style" type="button">Estilo</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="scenes-tab" data-bs-toggle="pill" data-bs-target="#scenes" type="button">Escenas</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="audio-tab" data-bs-toggle="pill" data-bs-target="#audio" type="button">Audio</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="sora-tab" data-bs-toggle="pill" data-bs-target="#sora" type="button">
-                                    <i class="bi bi-magic"></i> SORA
-                                </button>
-                            </li>
+                        <!-- Progress Steps -->
+                        <div class="steps mb-5">
+                            <div class="step" data-step="1">
+                                <div class="step-circle">1</div>
+                                <div class="step-label">Metadatos</div>
+                            </div>
+                            <div class="step" data-step="2">
+                                <div class="step-circle">2</div>
+                                <div class="step-label">Estilo</div>
+                            </div>
+                            <div class="step" data-step="3">
+                                <div class="step-circle">3</div>
+                                <div class="step-label">Escenas</div>
+                            </div>
+                            <div class="step" data-step="4">
+                                <div class="step-circle">4</div>
+                                <div class="step-label">Audio</div>
+                            </div>
+                            <div class="step" data-step="5">
+                                <div class="step-circle">5</div>
+                                <div class="step-label">Exportar</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mb-4">
+                            <button type="button" class="btn btn-outline-secondary" id="prevStep" disabled>
+                                <i class="bi bi-arrow-left"></i> Anterior
+                            </button>
+                            <div class="step-indicator">Paso <span id="currentStep">1</span> de 5</div>
+                            <button type="button" class="btn btn-primary" id="nextStep">
+                                Siguiente <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Form Content -->
+                        <div class="tab-content" id="formTabsContent">
+                            <!-- Step 1: Metadata -->
+                            <div id="step-1" class="form-section active">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h4 class="mb-0"><i class="bi bi-card-heading"></i> Información Básica</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="titulo" class="form-label">Título del Video <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="titulo" required>
+                                                <div class="form-text">Un título descriptivo para tu video.</div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <label for="descripcion" class="form-label">Descripción</label>
+                                                <textarea class="form-control" id="descripcion" rows="3"></textarea>
+                                                <div class="form-text">Describe el propósito y contenido del video.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" disabled>Anterior</button>
+                                    <button type="button" class="btn btn-primary" onclick="showStep(2)">Siguiente</button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Style -->
+                            <div id="step-2" class="form-section">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h4 class="mb-0"><i class="bi bi-palette"></i> Estilo Visual</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="estilo" class="form-label">Estilo Visual</label>
+                                                <select class="form-select" id="estilo">
+                                                    <option value="realista">Realista</option>
+                                                    <option value="animado">Animado</option>
+                                                    <option value="pintura">Pintura artística</option>
+                                                    <option value="minimalista">Minimalista</option>
+                                                    <option value="cinematico">Cinematográfico</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="color" class="form-label">Paleta de Colores</label>
+                                                <input type="color" class="form-control form-control-color" id="color" value="#0d6efd">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="showStep(1)">Anterior</button>
+                                    <button type="button" class="btn btn-primary" onclick="showStep(3)">Siguiente</button>
+                                </div>
+                            </div>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="technical-tab" data-bs-toggle="pill" data-bs-target="#technical" type="button">Técnico</button>
                             </li>
                         </ul>
 
                         <div class="tab-content" id="formTabsContent">
-                            <!-- Metadata Tab -->
-                            <div class="tab-pane fade show active" id="metadata" role="tabpanel">
+                            <!-- Step 3: Scenes -->
+                            <div id="step-3" class="form-section">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <h4 class="mb-0"><i class="bi bi-collection-play"></i> Escenas</h4>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addScene()">
+                                            <i class="bi bi-plus"></i> Añadir Escena
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="scenes-container">
+                                            <!-- Scenes will be added here dynamically -->
+                                            <div class="text-center text-muted py-4">
+                                                <i class="bi bi-images fs-1"></i>
+                                                <p class="mt-2">Añade tu primera escena para comenzar</p>
+                                                <button type="button" class="btn btn-primary" onclick="addScene()">
+                                                    <i class="bi bi-plus-circle"></i> Añadir Escena
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="showStep(2)">Anterior</button>
+                                    <button type="button" class="btn btn-primary" onclick="showStep(4)">Siguiente</button>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Audio -->
+                            <div id="step-4" class="form-section">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h4 class="mb-0"><i class="bi bi-music-note"></i> Audio</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="audio-type" class="form-label">Tipo de Audio</label>
+                                            <select class="form-select" id="audio-type" onchange="updateAudioOptions()">
+                                                <option value="voz">Voz en off</option>
+                                                <option value="musica">Música de fondo</option>
+                                                <option value="ambiental">Sonido ambiental</option>
+                                                <option value="ninguno">Ninguno</option>
+                                            </select>
+                                        </div>
+                                        <div id="audio-options" class="mt-3">
+                                            <!-- Audio options will be shown based on selection -->
+                                            <div id="voice-options" class="audio-option">
+                                                <div class="mb-3">
+                                                    <label for="voice-script" class="form-label">Guión de voz</label>
+                                                    <textarea class="form-control" id="voice-script" rows="4" placeholder="Escribe el texto que se convertirá en voz..."></textarea>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label for="voice-gender" class="form-label">Género de voz</label>
+                                                        <select class="form-select" id="voice-gender">
+                                                            <option value="femenina">Femenina</option>
+                                                            <option value="masculina">Masculina</option>
+                                                            <option value="neutra">Neutra</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="voice-speed" class="form-label">Velocidad</label>
+                                                        <input type="range" class="form-range" id="voice-speed" min="0.5" max="2" step="0.1" value="1">
+                                                        <div class="d-flex justify-content-between">
+                                                            <small>Más lento</small>
+                                                            <small>Más rápido</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="music-options" class="audio-option" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label for="music-genre" class="form-label">Género musical</label>
+                                                    <select class="form-select" id="music-genre">
+                                                        <option value="clasica">Clásica</option>
+                                                        <option value="electronica">Electrónica</option>
+                                                        <option value="ambiental">Ambiental</option>
+                                                        <option value="corporate">Corporativa</option>
+                                                        <option value="upbeat">Energética</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="music-volume" class="form-label">Volumen</label>
+                                                    <input type="range" class="form-range" id="music-volume" min="0" max="100" value="70">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small>Bajo</small>
+                                                        <small>Alto</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="ambient-options" class="audio-option" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label for="ambient-type" class="form-label">Tipo de sonido ambiental</label>
+                                                    <select class="form-select" id="ambient-type">
+                                                        <option value="naturaleza">Naturaleza</option>
+                                                        <option value="ciudad">Ciudad</option>
+                                                        <option value="cafeteria">Cafetería</option>
+                                                        <option value="lluvia">Lluvia</option>
+                                                        <option value="playa">Playa</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="ambient-volume" class="form-label">Volumen</label>
+                                                    <input type="range" class="form-range" id="ambient-volume" min="0" max="100" value="40">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small>Bajo</small>
+                                                        <small>Alto</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="no-audio" class="audio-option" style="display: none;">
+                                                <div class="alert alert-info mb-0">
+                                                    <i class="bi bi-info-circle"></i> No se incluirá audio en el video.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="showStep(3)">Anterior</button>
+                                    <button type="button" class="btn btn-primary" onclick="showStep(5)">Siguiente</button>
+                                </div>
+                            </div>
+
+                            <!-- Step 5: Export -->
+                            <div id="step-5" class="form-section">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h4 class="mb-0"><i class="bi bi-download"></i> Exportar</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="text-center py-4">
+                                            <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                                            <h4 class="mt-3">¡Tu video está listo para generarse!</h4>
+                                            <p class="text-muted">Revisa la configuración y haz clic en el botón de abajo para generar el JSON.</p>
+                                            <button class="btn btn-primary btn-lg" onclick="generateJSON()">
+                                                <i class="bi bi-magic"></i> Generar JSON
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="showStep(4)">Anterior</button>
+                                    <button type="button" class="btn btn-success" onclick="generateJSON()">
+                                        <i class="bi bi-download"></i> Exportar JSON
+                                    </button>
+                                </div>
+                            </div>
                                 <div class="form-section">
                                     <h4>Metadatos Básicos</h4>
                                     <div class="row">
@@ -834,11 +1316,42 @@
             });
         }
         
-        // Initialize tooltips and event listeners
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            // Show welcome modal on first visit
+            const welcomeShown = localStorage.getItem('welcomeShown');
+            const welcomeModal = new bootstrap.Modal(document.getElementById('welcomeModal'));
+            
+            // Initialize form immediately if welcome was already shown
+            if (welcomeShown) {
+                document.getElementById('mainContent').style.display = 'block';
+                initializeForm();
+            } else {
+                // Show welcome modal for first-time users
+                welcomeModal.show();
+                localStorage.setItem('welcomeShown', 'true');
+                
+                // Initialize form when modal is hidden
+                document.getElementById('welcomeModal').addEventListener('hidden.bs.modal', function() {
+                    document.getElementById('mainContent').style.display = 'block';
+                    initializeForm();
+                });
+            }
+            
             // Initialize Bootstrap tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
+            
+            // Initialize help system
+            document.querySelectorAll('.help-trigger').forEach(trigger => {
+                trigger.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-help-target');
+                    const helpContent = document.getElementById(targetId);
+                    helpContent.classList.toggle('active');
+                });
+            });
+            
+            // Initialize tooltips
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
             
@@ -1335,6 +1848,248 @@
             return 'medium';
         }
 
+        // Step Management
+        let currentStep = 1;
+        const totalSteps = 5;
+        
+        // Initialize the form
+        function initializeForm() {
+            // Show main content
+            document.getElementById('mainContent').style.display = 'block';
+            
+            // Initialize first step
+            showStep(1);
+            
+            // Set up event listeners
+            document.getElementById('nextStep').addEventListener('click', nextStep);
+            document.getElementById('prevStep').addEventListener('click', prevStep);
+            
+            // Set up keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || (e.ctrlKey && e.key === 'ArrowDown')) {
+                    e.preventDefault();
+                    nextStep();
+                } else if (e.key === 'ArrowLeft' || (e.ctrlKey && e.key === 'ArrowUp')) {
+                    e.preventDefault();
+                    prevStep();
+                }
+            });
+            
+            // Show progress bar
+            document.getElementById('progressBar').style.display = 'block';
+            updateProgressBar();
+        }
+        
+        // Navigation functions
+        function showStep(stepNumber) {
+            // Validate current step before proceeding
+            if (stepNumber > currentStep && !validateStep(currentStep)) {
+                return;
+            }
+            
+            // Update current step
+            currentStep = stepNumber;
+            
+            // Hide all steps
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show current step with animation
+            const currentSection = document.getElementById(`step-${stepNumber}`);
+            if (currentSection) {
+                currentSection.classList.add('active');
+                currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            // Update step indicators
+            updateStepIndicators(stepNumber);
+            
+            // Update navigation buttons
+            updateNavigationButtons(stepNumber);
+            
+            // Update progress bar
+            updateProgressBar();
+        }
+        
+        function updateStepIndicators(currentStep) {
+            document.querySelectorAll('.step').forEach((step, index) => {
+                const stepNum = index + 1;
+                if (stepNum < currentStep) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (stepNum === currentStep) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+        }
+        
+        function updateNavigationButtons(stepNumber) {
+            const prevButton = document.getElementById('prevStep');
+            const nextButton = document.getElementById('nextStep');
+            
+            // Update previous button
+            prevButton.disabled = (stepNumber === 1);
+            prevButton.onclick = stepNumber > 1 ? () => showStep(stepNumber - 1) : null;
+            
+            // Update next/finish button
+            if (stepNumber === totalSteps) {
+                nextButton.innerHTML = '<i class="bi bi-check-circle"></i> Finalizar';
+                nextButton.onclick = generateJSON;
+            } else {
+                nextButton.innerHTML = 'Siguiente <i class="bi bi-arrow-right"></i>';
+                nextButton.onclick = () => showStep(stepNumber + 1);
+            }
+            
+            // Update current step indicator
+            document.getElementById('currentStep').textContent = stepNumber;
+        }
+        
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                if (validateStep(currentStep)) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            } else {
+                // Final step - generate JSON
+                generateJSON();
+            }
+        }
+        
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+        
+        function validateStep(step) {
+            let isValid = true;
+            let errorMessage = '';
+            
+            switch(step) {
+                case 1: // Metadata
+                    const title = document.getElementById('titulo')?.value.trim();
+                    if (!title) {
+                        errorMessage = 'Por favor ingresa un título para el video';
+                        isValid = false;
+                        document.getElementById('titulo').classList.add('is-invalid');
+                    } else {
+                        document.getElementById('titulo').classList.remove('is-invalid');
+                    }
+                    break;
+                    
+                case 2: // Style
+                    // No validation needed for style step
+                    break;
+                    
+                case 3: // Scenes
+                    const scenes = document.querySelectorAll('.scene-card').length;
+                    if (scenes === 0) {
+                        errorMessage = 'Debes agregar al menos una escena';
+                        isValid = false;
+                    }
+                    break;
+                    
+                case 4: // Audio
+                    // Basic audio validation if needed
+                    const audioType = document.getElementById('audio-type')?.value;
+                    if (audioType === 'voz') {
+                        const script = document.getElementById('voice-script')?.value.trim();
+                        if (!script) {
+                            errorMessage = 'Por favor ingresa el guión para la voz en off';
+                            isValid = false;
+                        }
+                    }
+                    break;
+            }
+            
+            if (!isValid) {
+                showToast('error', 'Error de validación', errorMessage);
+                
+                // Scroll to the first error
+                const firstError = document.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+            
+            return isValid;
+        }
+        
+        function updateProgressBar() {
+            const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            const progressBar = document.querySelector('#progressBar .progress-bar');
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+        
+        // Welcome modal functions
+        window.startGuidedTour = function() {
+            const welcomeModal = bootstrap.Modal.getInstance(document.getElementById('welcomeModal'));
+            welcomeModal.hide();
+            
+            // Initialize form if not already done
+            if (document.getElementById('mainContent').style.display !== 'block') {
+                initializeForm();
+            }
+            
+            // Show first help tooltip
+            setTimeout(() => {
+                const firstTooltip = document.querySelector('[data-bs-toggle="tooltip"]');
+                if (firstTooltip) {
+                    const tooltip = new bootstrap.Tooltip(firstTooltip);
+                    tooltip.show();
+                }
+            }, 500);
+        };
+        
+        // Help system
+        window.showHelp = function() {
+            const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+            helpModal.show();
+        };
+        
+        // Update audio options based on selection
+        window.updateAudioOptions = function() {
+            const audioType = document.getElementById('audio-type').value;
+            
+            // Hide all audio options
+            document.querySelectorAll('.audio-option').forEach(option => {
+                option.style.display = 'none';
+            });
+            
+            // Show selected audio type options
+            switch(audioType) {
+                case 'voz':
+                    document.getElementById('voice-options').style.display = 'block';
+                    break;
+                case 'musica':
+                    document.getElementById('music-options').style.display = 'block';
+                    break;
+                case 'ambiental':
+                    document.getElementById('ambient-options').style.display = 'block';
+                    break;
+                case 'ninguno':
+                    document.getElementById('no-audio').style.display = 'block';
+                    break;
+            }
+            
+            // Trigger change event for any dependent fields
+            const event = new Event('change');
+            document.dispatchEvent(event);
+        };
+        
+        // Initialize audio options when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Call updateAudioOptions after a short delay to ensure DOM is ready
+            setTimeout(updateAudioOptions, 100);
+        });
+        
         // Global error tracking
         const formErrors = {
             hasErrors: false,
