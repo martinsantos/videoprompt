@@ -1335,53 +1335,450 @@
             return 'medium';
         }
 
-        // Generate JSON
-        function generateJSON() {
-            // Helper function to safely get element value
-            const getValue = (id, isNumber = false) => {
-                const element = document.getElementById(id);
-                if (!element) {
-                    console.warn(`Element with ID '${id}' not found`);
-                    return isNumber ? 0 : '';
+        // Global error tracking
+        const formErrors = {
+            hasErrors: false,
+            messages: [],
+            addError: function(message) {
+                this.hasErrors = true;
+                this.messages.push(message);
+                console.error('Form Error:', message);
+            },
+            clear: function() {
+                this.hasErrors = false;
+                this.messages = [];
+            },
+            show: function() {
+                if (!this.hasErrors) return;
+                
+                const errorHtml = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <h5><i class="bi bi-exclamation-triangle-fill"></i> Se encontraron errores:</h5>
+                        <ul class="mb-0">
+                            ${this.messages.map(msg => `<li>${msg}</li>`).join('')}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                    </div>
+                `;
+                
+                const errorContainer = document.getElementById('errorContainer');
+                if (errorContainer) {
+                    errorContainer.innerHTML = errorHtml;
+                    errorContainer.scrollIntoView({ behavior: 'smooth' });
                 }
-                const value = element.value || '';
-                return isNumber ? parseFloat(value) || 0 : value;
-            };
+                
+                // Hide loading overlay if visible
+                hideLoadingOverlay();
+            }
+        };
 
-            const videoData = {
-                video: {
-                    metadatos: {
-                        titulo: getValue('titulo'),
-                        duracion_total: getValue('duracion_total'),
-                        orientacion: getValue('orientacion'),
-                        resolucion: getValue('resolucion'),
-                        fps: getValue('fps', true),
-                        tipo: getValue('tipo'),
-                        modelo_ia: getValue('modelo_ia')
+        // Helper function to safely get element value with validation
+        const getValue = (id, isNumber = false, required = false, errorMessage = '') => {
+            const element = document.getElementById(id);
+            if (!element) {
+                const msg = `Elemento con ID '${id}' no encontrado`;
+                console.warn(msg);
+                if (required) formErrors.addError(errorMessage || `Campo requerido no encontrado: ${id}`);
+                return isNumber ? 0 : '';
+            }
+            
+            let value = element.value || '';
+            
+            if (required && !value.trim()) {
+                formErrors.addError(errorMessage || `El campo es obligatorio: ${element.labels?.[0]?.textContent || id}`);
+            }
+            
+            return isNumber ? (parseFloat(value) || 0) : value;
+        };
+
+        // Generate structured JSON with scenes and transitions
+        function generateJSON() {
+            // Reset error state
+            formErrors.clear();
+            
+            // Show loading state
+            showLoadingOverlay('Generando estructura del video...');
+            
+            // Validate required fields
+            const title = getValue('titulo', false, true, 'Por favor ingresa un título para el video');
+            const orientation = getValue('orientacion', false, true);
+            const resolution = getValue('resolucion', false, true);
+            
+            // Get all scenes from the storyboard
+            const sceneElements = document.querySelectorAll('.sora-scene-card');
+            if (sceneElements.length === 0) {
+                formErrors.addError('Debes agregar al menos una escena al storyboard');
+            }
+
+            // Process each scene
+            const scenes = [];
+            let hasSceneErrors = false;
+            
+            sceneElements.forEach((sceneEl, index) => {
+                try {
+                    const sceneId = sceneEl.id || `scene-${Date.now()}-${index}`;
+                    const description = sceneEl.querySelector('.scene-description')?.value || '';
+                    const duration = parseInt(sceneEl.querySelector('.scene-duration')?.value) || 3;
+                    
+                    // Validate scene
+                    if (!description.trim()) {
+                        formErrors.addError(`La escena ${index + 1} no tiene descripción`);
+                        hasSceneErrors = true;
+                    }
+                    
+                    if (duration <= 0 || duration > 30) {
+                        formErrors.addError(`La duración de la escena ${index + 1} debe estar entre 1 y 30 segundos`);
+                        hasSceneErrors = true;
+                    }
+                    
+                    const scene = {
+                        id: sceneId,
+                        numero: index + 1,
+                        descripcion: description || 'Sin descripción',
+                        duracion: duration,
+                        tipo_plano: sceneEl.querySelector('.scene-shot-type')?.value || 'medium',
+                        movimiento_camara: sceneEl.querySelector('.scene-camera-movement')?.value || 'fixed',
+                        es_punto_clave: sceneEl.querySelector('.scene-keyframe')?.checked || false,
+                        elementos_destacados: [],
+                        transicion: {
+                            tipo: index < sceneElements.length - 1 ? getValue('sora_transition') : 'none',
+                            duracion: 0.5 // seconds
+                        }
+                    };
+                    
+                    scenes.push(scene);
+                } catch (error) {
+                    console.error(`Error procesando escena ${index + 1}:`, error);
+                    formErrors.addError(`Error al procesar la escena ${index + 1}. Por favor, revísala.`);
+                    hasSceneErrors = true;
+                }
+            });
+            
+            // If there are scene errors, show them and stop
+            if (hasSceneErrors) {
+                formErrors.show();
+                return null;
+            }
+
+            // Calculate total duration
+            const totalDuration = scenes.reduce((sum, scene) => sum + (scene.duracion || 0), 0);
+            
+            // Get video settings with validation
+            const fps = Math.min(Math.max(getValue('fps', true) || 30, 24), 60); // Clamp between 24-60 FPS
+            const temperatura = Math.min(Math.max(getValue('temperatura', true) || 0.7, 0), 1); // Clamp between 0-1
+            
+            // Create the structured script
+            const scriptData = {
+                version: '1.0',
+                platform: 'SORA',
+                metadata: {
+                    title: getValue('titulo') || 'Video sin título',
+                    description: getValue('descripcion') || '',
+                    created: new Date().toISOString(),
+                    duration: totalDuration,
+                    sceneCount: scenes.length,
+                    orientation: orientation,
+                    resolution: resolution,
+                    fps: fps,
+                    aspectRatio: orientation === 'landscape' ? '16:9' : '9:16'
+                },
+                settings: {
+                    style: {
+                        tone: getValue('tono') || 'neutral',
+                        energy: getValue('energia') || 'medium',
+                        detailLevel: getValue('nivel_detalle') || 'high',
+                        temporalConsistency: getValue('consistencia_temporal') || 'medium',
+                        motionSmoothness: getValue('suavidad_movimiento') || 'medium',
+                        temperature: temperatura
                     },
-                    configuracion_generacion: {
-                        nivel_detalle: getValue('nivel_detalle'),
-                        consistencia_temporal: getValue('consistencia_temporal'),
-                        suavidad_movimiento: getValue('suavidad_movimiento'),
-                        temperatura: getValue('temperatura', true)
+                    output: {
+                        format: 'mp4',
+                        quality: 'high',
+                        includeSubtitles: false,
+                        watermark: false
+                    }
+                },
+                script: {
+                    configuracion: {
+                        orientacion: getValue('orientacion') || 'landscape',
+                        resolucion: getValue('resolucion') || '1920x1080',
+                        fps: getValue('fps', true) || 30,
+                        estilo_visual: {
+                            tono: getValue('tono') || 'neutral',
+                            energia: getValue('energia') || 'media',
+                            nivel_detalle: getValue('nivel_detalle') || 'alto',
+                            consistencia_temporal: getValue('consistencia_temporal') || 'media',
+                            suavidad_movimiento: getValue('suavidad_movimiento') || 'media'
+                        }
                     },
-                    estilo_general: {
-                        tono: getValue('tono'),
-                        energia: getValue('energia'),
-                        publico_objetivo: getValue('publico_objetivo')
+                    scenes: scenes.map((scene, index) => {
+                        const transition = index < scenes.length - 1 ? {
+                            type: getValue('sora_transition') || 'smooth',
+                            duration: 0.5,
+                            description: getTransitionDescription(getValue('sora_transition') || 'smooth')
+                        } : null;
+                        
+                        // Generate prompt for the scene
+                        const scenePrompt = generateScenePrompt(scene, transition);
+                        
+                        return {
+                            id: `scene-${index + 1}`,
+                            order: index + 1,
+                            type: 'video',
+                            duration: scene.duracion,
+                            prompt: scenePrompt,
+                            settings: {
+                                shotType: scene.tipo_plano,
+                                cameraMovement: scene.movimiento_camara,
+                                isKeyframe: scene.es_punto_clave,
+                                transition: transition
+                            },
+                            elements: {
+                                characters: [],
+                                objects: [],
+                                environment: {}
+                            },
+                            audio: {
+                                music: null,
+                                soundEffects: [],
+                                voiceOver: null
+                            },
+                            notes: ''
+                        };
+                    }),
+                    narrative: {
+                        flow: generateNarrativeFlow(scenes),
+                        keyMoments: scenes
+                            .filter(scene => scene.es_punto_clave)
+                            .map(scene => ({
+                                scene: scene.numero,
+                                description: scene.descripcion
+                            }))
                     }
                 }
             };
 
-            document.getElementById('jsonPreview').textContent = JSON.stringify(videoData, null, 2);
-            return videoData;
+            // Hide loading overlay
+            hideLoadingOverlay();
+            
+            // If there are errors, show them and stop
+            if (formErrors.hasErrors) {
+                formErrors.show();
+                return null;
+            }
+            
+            try {
+                // Format the JSON with syntax highlighting
+                const jsonString = JSON.stringify(scriptData, null, 2);
+                const formattedJson = syntaxHighlight(jsonString);
+                
+                // Display in preview
+                const previewElement = document.getElementById('jsonPreview');
+                if (previewElement) {
+                    previewElement.innerHTML = formattedJson;
+                    
+                    // Scroll to preview
+                    previewElement.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Show success message
+                    showToast('success', 'JSON generado exitosamente', 'La estructura del video ha sido generada correctamente.');
+                }
+                
+                return scriptData;
+                
+            } catch (error) {
+                console.error('Error al generar el JSON:', error);
+                formErrors.addError('Error al generar el JSON. Por favor, verifica los datos e inténtalo de nuevo.');
+                formErrors.show();
+                return null;
+            }
         }
 
+        // Generate a detailed scene prompt for better AI generation
+        function generateScenePrompt(scene, transition) {
+            const shotTypes = {
+                'extreme-close-up': 'un primerísimo plano extremo de',
+                'close-up': 'un primer plano cercano de',
+                'medium': 'un plano medio de',
+                'full': 'un plano completo de',
+                'wide': 'un plano general amplio de',
+                'aerial': 'una vista aérea de',
+                'pov': 'una vista en primera persona de',
+                'over-the-shoulder': 'un plano sobre el hombro de',
+                'dutch': 'un plano inclinado (dutch angle) de'
+            };
+            
+            const cameraMovements = {
+                'fixed': 'con la cámara fija',
+                'pan-left': 'con un paneo suave hacia la izquierda',
+                'pan-right': 'con un paneo suave hacia la derecha',
+                'tilt-up': 'con un ligero movimiento hacia arriba',
+                'tilt-down': 'con un ligero movimiento hacia abajo',
+                'zoom-in': 'con un acercamiento gradual',
+                'zoom-out': 'con un alejamiento gradual',
+                'dolly-in': 'con un movimiento de acercamiento suave',
+                'dolly-out': 'con un movimiento de alejamiento suave',
+                'tracking': 'con un movimiento de seguimiento lateral',
+                'crane-up': 'con un movimiento ascendente de grúa',
+                'crane-down': 'con un movimiento descendente de grúa',
+                'handheld': 'con un ligero movimiento de cámara en mano',
+                'steadycam': 'con un movimiento fluido de steadycam'
+            };
+            
+            const shotType = shotTypes[scene.tipo_plano] || 'un plano de';
+            const cameraMovement = cameraMovements[scene.movimiento_camara] || '';
+            
+            // Build the prompt
+            let prompt = `${shotType} ${scene.descripcion} ${cameraMovement}. `;
+            
+            // Add style and quality instructions
+            prompt += `Calidad cinematográfica 8K, iluminación profesional, enfoque nítido, `;
+            prompt += `estilo visual ${getValue('estilo_visual') || 'cinemático'}, `;
+            prompt += `tono ${getValue('tono') || 'neutral'}.`;
+            
+            return prompt.trim();
+        }
+        
+        // Generate narrative flow description
+        function generateNarrativeFlow(scenes) {
+            if (scenes.length === 0) return '';
+            
+            const transitionTexts = {
+                'smooth': 'Luego,',
+                'cut': 'De repente,',
+                'fade': 'Poco a poco,',
+                'zoom': 'Acercándose,',
+                'slide': 'Deslizándose,',
+                'wipe': 'Revelando,'
+            };
+            
+            let flow = scenes[0].descripcion.charAt(0).toUpperCase() + scenes[0].descripcion.slice(1);
+            
+            for (let i = 1; i < scenes.length; i++) {
+                const transition = getValue('sora_transition') || 'smooth';
+                const transitionText = transitionTexts[transition] || 'Luego,';
+                flow += ` ${transitionText} ${scenes[i].descripcion.toLowerCase()}`;
+            }
+            
+            return flow + '.';
+        }
+        
+        // Syntax highlighting for JSON preview
+        function syntaxHighlight(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, null, 2);
+            }
+            
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            return json.replace(
+                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?([eE][+\-]?\d+)?)/g,
+                function (match) {
+                    let cls = 'text-dark';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'text-primary fw-bold';
+                        } else {
+                            cls = 'text-success';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'text-info';
+                    } else if (/null/.test(match)) {
+                        cls = 'text-warning';
+                    } else if (/\d+/.test(match)) {
+                        cls = 'text-danger';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                }
+            );
+        }
+        
+        // Show toast notification
+        function showToast(type, title, message) {
+            const toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) return;
+            
+            const toastId = 'toast-' + Date.now();
+            const icon = {
+                success: 'check-circle',
+                error: 'exclamation-triangle',
+                info: 'info-circle',
+                warning: 'exclamation-circle'
+            }[type] || 'info-circle';
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-${icon} me-2"></i>
+                            <strong>${title}</strong> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                    </div>
+                </div>
+            `;
+            
+            // Add to container
+            const toastElement = document.createElement('div');
+            toastElement.innerHTML = toastHtml;
+            toastContainer.appendChild(toastElement.firstElementChild);
+            
+            // Initialize and show
+            const toast = new bootstrap.Toast(toastElement.firstElementChild, {
+                autohide: true,
+                delay: 5000
+            });
+            
+            toast.show();
+            
+            // Remove from DOM after hiding
+            toastElement.firstElementChild.addEventListener('hidden.bs.toast', function () {
+                toastElement.remove();
+            });
+        }
+        
+        // Loading overlay functions
+        function showLoadingOverlay(message = 'Procesando...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const messageElement = document.getElementById('loadingMessage');
+            
+            if (overlay && messageElement) {
+                messageElement.textContent = message;
+                overlay.style.display = 'flex';
+            }
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+        
+        // Get transition description for config
+        function getTransitionDescription(transitionType) {
+            const descriptions = {
+                'smooth': 'Transición suave entre escenas',
+                'cut': 'Corte seco entre escenas',
+                'fade': 'Fundido a negro entre escenas',
+                'zoom': 'Efecto de zoom para cambiar de escena',
+                'slide': 'Deslizamiento horizontal entre escenas',
+                'wipe': 'Barrido de pantalla entre escenas',
+                'default': 'Transición predeterminada entre escenas'
+            };
+            return descriptions[transitionType] || descriptions.default;
+        }
+        
         // Copy JSON to clipboard
         function copyJSON() {
             const jsonText = document.getElementById('jsonPreview').textContent;
             navigator.clipboard.writeText(jsonText).then(() => {
-                alert('JSON copiado al portapapeles');
+                // Show toast notification instead of alert
+                const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+                toast.show();
+            }).catch(err => {
+                console.error('Error al copiar al portapapeles:', err);
+                alert('No se pudo copiar al portapapeles. Por favor, copia manualmente.');
             });
         }
 
