@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redactor de Escenas para AI Video</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        body { background: var(--light); }
+        
+        .sidebar {
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+        }
+        
+        .scene-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .scene-item:hover { background: #f1f5f9; }
+        .scene-item.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .provider-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .provider-seeddance { background: #10b981; color: white; }
+        .provider-sora { background: #f59e0b; color: white; }
+        .provider-veo { background: #3b82f6; color: white; }
+        
+        .config-panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .config-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .config-body { padding: 16px; }
+        
+        .preview-box {
+            background: #1e293b;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .tab-provider.active {
+            background: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+        
+        .element-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        .element-card:hover { border-color: var(--primary); }
+        
+        .transition-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { height: auto; max-height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #1e293b, #334155);">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-film"></i> Redactor de Escenas AI
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <label class="text-white mb-0">Proveedor:</label>
+                <select class="form-select form-select-sm" id="providerSelect" style="width: 180px;" onchange="changeProvider()">
+                    <option value="seeddance">SEEDDANCE</option>
+                    <option value="sora">SORA</option>
+                    <option value="veo">Vertex AI Veo</option>
+                </select>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar: Lista de Escenas -->
+            <div class="col-md-3 sidebar p-0">
+                <div class="p-3 border-bottom">
+                    <h6 class="mb-2"><i class="bi bi-collection-play"></i> Escenas</h6>
+                    <button class="btn btn-primary btn-sm w-100" onclick="addScene()">
+                        <i class="bi bi-plus"></i> Nueva Escena
+                    </button>
+                </div>
+                <div id="sceneList">
+                    <!-- Escenas se generan aquí -->
+                </div>
+                
+                <!-- Transiciones -->
+                <div class="p-3 border-top">
+                    <h6 class="mb-2"><i class="bi bi-arrow-left-right"></i> Transiciones</h6>
+                    <div id="transitionList"></div>
+                </div>
+            </div>
+            
+            <!-- Editor Principal -->
+            <div class="col-md-9">
+                <div class="p-4">
+                    <!-- Editor de Escena Actual -->
+                    <div class="config-panel mb-4">
+                        <div class="config-header">
+                            <i class="bi bi-pencil-square"></i> Editor de Escena
+                        </div>
+                        <div class="config-body">
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label class="form-label">Título de la Escena</label>
+                                    <input type="text" class="form-control" id="sceneTitle" placeholder="Ej: El despertar" oninput="updateSceneData()">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Duración (segundos)</label>
+                                    <input type="number" class="form-control" id="sceneDuration" value="5" min="1" max="60" oninput="updateSceneData()">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Descripción Breve</label>
+                                <textarea class="form-control" id="sceneDescription" rows="2" placeholder="Resumen en 1-2 oraciones..." oninput="updateSceneData()"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Elementos de la Escena -->
+                    <div class="config-panel mb-4">
+                        <div class="config-header">
+                            <i class="bi bi-layout-three-columns"></i> Elementos de la Escena
+                        </div>
+                        <div class="config-body">
+                            <div class="row">
+                                <!-- Sujeto -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="element-card">
+                                        <h6 class="text-primary"><i class="bi bi-person"></i> Sujeto</h6>
+                                        <input type="text" class="form-control form-control-sm mb-2" id="subjectName" placeholder="Nombre/Descripción" oninput="updateSceneData()">
+                                        <textarea class="form-control form-control-sm" id="subjectDesc" rows="2" placeholder="Detalles físicos, emociones..." oninput="updateSceneData()"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <!-- Ubicación -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="element-card">
+                                        <h6 class="text-success"><i class="bi bi-geo-alt"></i> Ubicación</h6>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" id="locationType" onchange="updateSceneData()">
+                                                    <option value="interior">Interior</option>
+                                                    <option value="exterior">Exterior</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" id="weather" onchange="updateSceneData()">
+                                                    <option value="none">Sin clima</option>
+                                                    <option value="sunny">Soleado</option>
+                                                    <option value="rainy">Lluvioso</option>
+                                                    <option value="cloudy">Nublado</option>
+                                                    <option value="foggy">Niebla</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm mt-2" id="locationSpace" placeholder="Lugar (casa, oficina, bosque...)" oninput="updateSceneData()">
+                                    </div>
+                                </div>
+                                
+                                <!-- Iluminación -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="element-card">
+                                        <h6 class="text-warning"><i class="bi bi-brightness-high"></i> Iluminación</h6>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" id="lightType" onchange="updateSceneData()">
+                                                    <option value="natural">Natural</option>
+                                                    <option value="artificial">Artificial</option>
+                                                    <option value="mixed">Mixta</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" id="lightDirection" onchange="updateSceneData()">
+                                                    <option value="frontal">Frontal</option>
+                                                    <option value="lateral">Lateral</option>
+                                                    <option value="backlight">Contraluz</option>
+                                                    <option value="top">Cenital</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="lightQuality" onchange="updateSceneData()">
+                                            <option value="soft">Soft (Suave)</option>
+                                            <option value="hard">Hard (Duro)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Movimiento -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="element-card">
+                                        <h6 class="text-info"><i class="bi bi-camera"></i> Movimiento</h6>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" id="shotType" onchange="updateSceneData()">
+                                                    <optgroup label="Planos">
+                                                        <option value="extreme_closeup">Extremo Primer Plano</option>
+                                                        <option value="closeup">Primer Plano</option>
+                                                        <option value="medium" selected>Plano Medio</option>
+                                                        <option value="full">Plano Completo</option>
+                                                        <option value="wide">Plano General</option>
+                                                    </optgroup>
+                                                    <optgroup label="Especiales">
+                                                        <option value="aerial">Vista Aérea</option>
+                                                        <option value="pov">POV</option>
+                                                        <option value="over_shoulder">Sobre el Hombro</option>
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <select class="form-select form-select-sm" id="cameraMotion" onchange="updateSceneData()">
+                                                    <option value="fixed">Cámara Fija</option>
+                                                    <option value="pan_left">Paneo Izquierda</option>
+                                                    <option value="pan_right">Paneo Derecha</option>
+                                                    <option value="tilt_up">Inclinación Arriba</option>
+                                                    <option value="tilt_down">Inclinación Abajo</option>
+                                                    <option value="zoom_in">Zoom In</option>
+                                                    <option value="zoom_out">Zoom Out</option>
+                                                    <option value="dolly_in">Dolly In</option>
+                                                    <option value="dolly_out">Dolly Out</option>
+                                                    <option value="tracking">Tracking</option>
+                                                    <option value="steadycam">Steadycam</option>
+                                                    <option value="handheld">Handheld</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Estilo Visual -->
+                                <div class="col-md-12 mb-3">
+                                    <div class="element-card">
+                                        <h6 class="text-danger"><i class="bi bi-palette"></i> Estilo Visual</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <select class="form-select form-select-sm" id="visualStyle" onchange="updateSceneData()">
+                                                    <option value="realistic">Realista</option>
+                                                    <option value="cinematic">Cinematográfico</option>
+                                                    <option value="animated">Animado</option>
+                                                    <option value="illustration">Ilustración</option>
+                                                    <option value="anime">Anime</option>
+                                                    <option value="documentary">Documental</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control form-control-sm" id="colorPalette" placeholder="Paleta de colores (opcional)" oninput="updateSceneData()">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control form-control-sm" id="references" placeholder="Referencias (Pixar, Ghibli...)" oninput="updateSceneData()">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configuración por Proveedor -->
+                    <div class="config-panel mb-4">
+                        <div class="config-header">
+                            <i class="bi bi-gear"></i> Configuración del Proveedor
+                        </div>
+                        <div class="config-body">
+                            <!-- Tabs de proveedores -->
+                            <ul class="nav nav-pills mb-3" id="providerTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link tab-provider active" id="tab-seeddance" data-bs-toggle="pill" data-bs-target="#config-seeddance" type="button">
+                                        SEEDDANCE
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link tab-provider" id="tab-sora" data-bs-toggle="pill" data-bs-target="#config-sora" type="button">
+                                        SORA
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link tab-provider" id="tab-veo" data-bs-toggle="pill" data-bs-target="#config-veo" type="button">
+                                        VEO
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="providerConfigContent">
+                                <!-- SEEDDANCE Config -->
+                                <div class="tab-pane fade show active" id="config-seeddance" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Calidad</label>
+                                            <select class="form-select form-select-sm" id="sd_quality">
+                                                <option value="standard">Estándar</option>
+                                                <option value="high" selected>Alta</option>
+                                                <option value="premium">Premium</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Estilo</label>
+                                            <select class="form-select form-select-sm" id="sd_style">
+                                                <option value="cinematic" selected>Cinematográfico</option>
+                                                <option value="documentary">Documental</option>
+                                                <option value="animated">Animado</option>
+                                                <option value="abstract">Abstracto</option>
+                                                <option value="artistic">Artístico</option>
+                                                <option value="realistic">Realista</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Tema</label>
+                                            <select class="form-select form-select-sm" id="sd_theme">
+                                                <option value="none" selected>Ninguno</option>
+                                                <option value="dark">Oscuro</option>
+                                                <option value="bright">Brillante</option>
+                                                <option value="neon">Neón</option>
+                                                <option value="vintage">Vintage</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Enhancements</label>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="sd_face_enhancement">
+                                                <label class="form-check-label" for="sd_face_enhancement">Face Enhancement</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="sd_motion_blur" checked>
+                                                <label class="form-check-label" for="sd_motion_blur">Motion Blur</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="sd_color_grading">
+                                                <label class="form-check-label" for="sd_color_grading">Color Grading</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="sd_depth_of_field">
+                                                <label class="form-check-label" for="sd_depth_of_field">Depth of Field</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- SORA Config -->
+                                <div class="tab-pane fade" id="config-sora" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Aspect Ratio</label>
+                                            <select class="form-select form-select-sm" id="sora_aspect">
+                                                <option value="16:9" selected>16:9 (Horizontal)</option>
+                                                <option value="9:16">9:16 (Vertical)</option>
+                                                <option value="1:1">1:1 (Cuadrado)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Quality</label>
+                                            <select class="form-select form-select-sm" id="sora_quality">
+                                                <option value="standard">Estándar</option>
+                                                <option value="hd" selected>HD</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Variations</label>
+                                            <select class="form-select form-select-sm" id="sora_variations">
+                                                <option value="1" selected>1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Transition Style</label>
+                                            <select class="form-select form-select-sm" id="sora_transition">
+                                                <option value="smooth" selected>Suave</option>
+                                                <option value="cut">Corte Seco</option>
+                                                <option value="fade">Fundido</option>
+                                                <option value="zoom">Zoom</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Duration (global)</label>
+                                            <input type="number" class="form-control form-control-sm" id="sora_duration" value="20" max="60">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <label class="form-label">Prompt Negativo (opcional)</label>
+                                        <input type="text" class="form-control form-control-sm" id="sora_negative" placeholder="Elementos a evitar, separados por coma">
+                                    </div>
+                                </div>
+                                
+                                <!-- VEO Config -->
+                                <div class="tab-pane fade" id="config-veo" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Model</label>
+                                            <select class="form-select form-select-sm" id="veo_model">
+                                                <option value="veo-2.1" selected>Veo 2.1</option>
+                                                <option value="veo-2.0">Veo 2.0</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Aspect Ratio</label>
+                                            <select class="form-select form-select-sm" id="veo_aspect">
+                                                <option value="16:9" selected>16:9</option>
+                                                <option value="9:16">9:16</option>
+                                                <option value="1:1">1:1</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Duration (per scene)</label>
+                                            <input type="number" class="form-control form-control-sm" id="veo_duration" value="8" max="8">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">People</label>
+                                            <select class="form-select form-select-sm" id="veo_people">
+                                                <option value="1" selected>1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Seed</label>
+                                            <select class="form-select form-select-sm" id="veo_seed">
+                                                <option value="random" selected>Random</option>
+                                                <option value="fixed">Fixed</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Temperature</label>
+                                            <input type="number" class="form-control form-control-sm" id="veo_temperature" value="0.7" min="0" max="1" step="0.1">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Detail Level</label>
+                                            <select class="form-select form-select-sm" id="veo_detail">
+                                                <option value="low">Bajo</option>
+                                                <option value="medium">Medio</option>
+                                                <option value="high" selected>Alto</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Temporal Consistency</label>
+                                            <select class="form-select form-select-sm" id="veo_temporal">
+                                                <option value="low">Baja</option>
+                                                <option value="medium">Media</option>
+                                                <option value="high" selected>Alta</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Motion Smoothness</label>
+                                            <select class="form-select form-select-sm" id="veo_motion">
+                                                <option value="low">Bajo</option>
+                                                <option value="medium">Medio</option>
+                                                <option value="high" selected>Alto</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview de Prompt -->
+                    <div class="config-panel mb-4">
+                        <div class="config-header">
+                            <i class="bi bi-eye"></i> Preview del Prompt
+                        </div>
+                        <div class="config-body">
+                            <ul class="nav nav-tabs mb-3" id="previewTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#preview-seeddance" type="button">SEEDDANCE</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#preview-sora" type="button">SORA</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#preview-veo" type="button">VEO</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="preview-seeddance">
+                                    <pre class="preview-box" id="previewSeeddanceText">Selecciona una escena para ver el prompt...</pre>
+                                </div>
+                                <div class="tab-pane fade" id="preview-sora">
+                                    <pre class="preview-box" id="previewSoraText">Selecciona una escena para ver el prompt...</pre>
+                                </div>
+                                <div class="tab-pane fade" id="preview-veo">
+                                    <pre class="preview-box" id="previewVeoText">Selecciona una escena para ver el prompt...</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Audio -->
+                    <div class="config-panel mb-4">
+                        <div class="config-header">
+                            <i class="bi bi-soundwave"></i> Audio
+                        </div>
+                        <div class="config-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Música</label>
+                                    <select class="form-select form-select-sm" id="audioMusic" onchange="updateSceneData()">
+                                        <option value="none">Ninguna</option>
+                                        <option value="ambient">Ambiental</option>
+                                        <option value="epic">Épica</option>
+                                        <option value="sad">Triste</option>
+                                        <option value="happy">Alegre</option>
+                                        <option value="tension">Tensión</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Volumen Música</label>
+                                    <input type="range" class="form-range" id="audioVolume" min="0" max="100" value="60" oninput="updateSceneData()">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Efectos de Sonido</label>
+                                    <input type="text" class="form-control form-control-sm" id="audioEffects" placeholder="viento, pasos, lluvia..." oninput="updateSceneData()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de Acción -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button class="btn btn-outline-danger" onclick="deleteCurrentScene()" id="deleteSceneBtn" disabled>
+                                <i class="bi bi-trash"></i> Eliminar Escena
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" onclick="importJSON()">
+                                <i class="bi bi-upload"></i> Importar
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="exportJSON()">
+                                <i class="bi bi-download"></i> Exportar JSON
+                            </button>
+                            <button class="btn btn-success" onclick="exportForProvider()">
+                                <i class="bi bi-rocket-takeoff"></i> Exportar para Proveedor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ==================== DATA ====================
+        let scenes = [];
+        let currentSceneIndex = -1;
+        
+        // Shot types para el generador de prompts
+        const shotTypeLabels = {
+            'extreme_closeup': 'un primerísimo plano extremo de',
+            'closeup': 'un primer plano cercano de',
+            'medium': 'un plano medio de',
+            'full': 'un plano completo de',
+            'wide': 'un plano general amplio de',
+            'aerial': 'una vista aérea de',
+            'pov': 'una vista en primera persona de',
+            'over_shoulder': 'un plano sobre el hombro de'
+        };
+        
+        const cameraMotionLabels = {
+            'fixed': 'con la cámara fija',
+            'pan_left': 'con un paneo suave hacia la izquierda',
+            'pan_right': 'con un paneo suave hacia la derecha',
+            'tilt_up': 'con un ligero movimiento hacia arriba',
+            'tilt_down': 'con un ligero movimiento hacia abajo',
+            'zoom_in': 'con un acercamiento gradual',
+            'zoom_out': 'con un alejamiento gradual',
+            'dolly_in': 'con un movimiento de acercamiento suave',
+            'dolly_out': 'con un movimiento de alejamiento suave',
+            'tracking': 'con un movimiento de seguimiento lateral',
+            'steadycam': 'con un movimiento fluido de steadycam',
+            'handheld': 'con un ligero movimiento de cámara en mano'
+        };
+        
+        const weatherLabels = {
+            'none': '',
+            'sunny': 'bajo un cielo soleado',
+            'rainy': 'bajo la lluvia',
+            'cloudy': 'en un día nublado',
+            'foggy': 'con niebla flotando en el ambiente'
+        };
+        
+        const lightTypeLabels = {
+            'natural': 'iluminación natural',
+            'artificial': 'iluminación artificial',
+            'mixed': 'iluminación mixta'
+        };
+        
+        const lightDirectionLabels = {
+            'frontal': 'luz frontal',
+            'lateral': 'luz lateral',
+            'backlight': 'contraluz',
+            'top': 'luz cenital'
+        };
+        
+        const visualStyleLabels = {
+            'realistic': 'estilo realista',
+            'cinematic': 'estilo cinematográfico de alta calidad',
+            'animated': 'estilo animación 3D',
+            'illustration': 'estilo ilustración',
+            'anime': 'estilo anime japonés',
+            'documentary': 'estilo documental'
+        };
+        
+        // ==================== SCENE MANAGEMENT ====================
+        function addScene() {
+            const newScene = {
+                id: 'scene_' + Date.now(),
+                title: 'Escena ' + (scenes.length + 1),
+                description: '',
+                duration: 5,
+                subject: { name: '', desc: '' },
+                location: { type: 'interior', space: '', weather: 'none' },
+                illumination: { type: 'natural', direction: 'frontal', quality: 'soft' },
+                movement: { shot_type: 'medium', camera_motion: 'fixed' },
+                style: { visual: 'cinematic', palette: '', references: '' },
+                audio: { music: 'none', volume: 60, effects: '' }
+            };
+            
+            scenes.push(newScene);
+            currentSceneIndex = scenes.length - 1;
+            renderSceneList();
+            loadSceneToEditor();
+            updateTransitions();
+        }
+        
+        function renderSceneList() {
+            const list = document.getElementById('sceneList');
+            list.innerHTML = '';
+            
+            scenes.forEach((scene, index) => {
+                const div = document.createElement('div');
+                div.className = 'scene-item' + (index === currentSceneIndex ? ' active' : '');
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-film"></i> ${scene.title}</span>
+                        <small class="opacity-75">${scene.duration}s</small>
+                    </div>
+                `;
+                div.onclick = () => selectScene(index);
+                list.appendChild(div);
+            });
+        }
+        
+        function selectScene(index) {
+            currentSceneIndex = index;
+            renderSceneList();
+            loadSceneToEditor();
+        }
+        
+        function loadSceneToEditor() {
+            if (currentSceneIndex < 0 || !scenes[currentSceneIndex]) {
+                clearEditor();
+                return;
+            }
+            
+            const scene = scenes[currentSceneIndex];
+            
+            document.getElementById('sceneTitle').value = scene.title;
+            document.getElementById('sceneDescription').value = scene.description;
+            document.getElementById('sceneDuration').value = scene.duration;
+            
+            document.getElementById('subjectName').value = scene.subject.name;
+            document.getElementById('subjectDesc').value = scene.subject.desc;
+            
+            document.getElementById('locationType').value = scene.location.type;
+            document.getElementById('locationSpace').value = scene.location.space;
+            document.getElementById('weather').value = scene.location.weather;
+            
+            document.getElementById('lightType').value = scene.illumination.type;
+            document.getElementById('lightDirection').value = scene.illumination.direction;
+            document.getElementById('lightQuality').value = scene.illumination.quality;
+            
+            document.getElementById('shotType').value = scene.movement.shot_type;
+            document.getElementById('cameraMotion').value = scene.movement.camera_motion;
+            
+            document.getElementById('visualStyle').value = scene.style.visual;
+            document.getElementById('colorPalette').value = scene.style.palette;
+            document.getElementById('references').value = scene.style.references;
+            
+            document.getElementById('audioMusic').value = scene.audio.music;
+            document.getElementById('audioVolume').value = scene.audio.volume;
+            document.getElementById('audioEffects').value = scene.audio.effects;
+            
+            document.getElementById('deleteSceneBtn').disabled = false;
+            
+            updatePreviews();
+        }
+        
+        function clearEditor() {
+            document.getElementById('sceneTitle').value = '';
+            document.getElementById('sceneDescription').value = '';
+            document.getElementById('sceneDuration').value = 5;
+            document.getElementById('subjectName').value = '';
+            document.getElementById('subjectDesc').value = '';
+            document.getElementById('locationSpace').value = '';
+            document.getElementById('colorPalette').value = '';
+            document.getElementById('references').value = '';
+            document.getElementById('audioEffects').value = '';
+            document.getElementById('deleteSceneBtn').disabled = true;
+            
+            document.getElementById('previewSeeddanceText').textContent = 'Selecciona una escena para ver el prompt...';
+            document.getElementById('previewSoraText').textContent = 'Selecciona una escena para ver el prompt...';
+            document.getElementById('previewVeoText').textContent = 'Selecciona una escena para ver el prompt...';
+        }
+        
+        function updateSceneData() {
+            if (currentSceneIndex < 0) return;
+            
+            const scene = scenes[currentSceneIndex];
+            
+            scene.title = document.getElementById('sceneTitle').value;
+            scene.description = document.getElementById('sceneDescription').value;
+            scene.duration = parseInt(document.getElementById('sceneDuration').value) || 5;
+            
+            scene.subject.name = document.getElementById('subjectName').value;
+            scene.subject.desc = document.getElementById('subjectDesc').value;
+            
+            scene.location.type = document.getElementById('locationType').value;
+            scene.location.space = document.getElementById('locationSpace').value;
+            scene.location.weather = document.getElementById('weather').value;
+            
+            scene.illumination.type = document.getElementById('lightType').value;
+            scene.illumination.direction = document.getElementById('lightDirection').value;
+            scene.illumination.quality = document.getElementById('lightQuality').value;
+            
+            scene.movement.shot_type = document.getElementById('shotType').value;
+            scene.movement.camera_motion = document.getElementById('cameraMotion').value;
+            
+            scene.style.visual = document.getElementById('visualStyle').value;
+            scene.style.palette = document.getElementById('colorPalette').value;
+            scene.style.references = document.getElementById('references').value;
+            
+            scene.audio.music = document.getElementById('audioMusic').value;
+            scene.audio.volume = parseInt(document.getElementById('audioVolume').value);
+            scene.audio.effects = document.getElementById('audioEffects').value;
+            
+            renderSceneList();
+            updatePreviews();
+        }
+        
+        function deleteCurrentScene() {
+            if (currentSceneIndex < 0) return;
+            if (!confirm('¿Eliminar esta escena?')) return;
+            
+            scenes.splice(currentSceneIndex, 1);
+            currentSceneIndex = scenes.length > 0 ? 0 : -1;
+            renderSceneList();
+            loadSceneToEditor();
+            updateTransitions();
+        }
+        
+        // ==================== TRANSITIONS ====================
+        function updateTransitions() {
+            const list = document.getElementById('transitionList');
+            list.innerHTML = '';
+            
+            for (let i = 0; i < scenes.length - 1; i++) {
+                const div = document.createElement('div');
+                div.className = 'transition-item';
+                div.innerHTML = `
+                    <small>${i + 1}</small>
+                    <i class="bi bi-arrow-right"></i>
+                    <small>${i + 2}</small>
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="updateTransition(${i}, this.value)">
+                        <option value="dissolve">Dissolve</option>
+                        <option value="cut" selected>Corte</option>
+                        <option value="fade">Fundido</option>
+                        <option value="wipe">Wipe</option>
+                    </select>
+                `;
+                list.appendChild(div);
+            }
+        }
+        
+        function updateTransition(index, type) {
+            // Por ahora simple, se puede expandir después
+            console.log('Transition', index, type);
+        }
+        
+        // ==================== PROMPT GENERATION ====================
+        function generatePrompt(provider) {
+            if (currentSceneIndex < 0 || !scenes[currentSceneIndex]) return '';
+            
+            const scene = scenes[currentSceneIndex];
+            const shot = shotTypeLabels[scene.movement.shot_type] || 'un plano de';
+            const motion = cameraMotionLabels[scene.movement.camera_motion] || '';
+            const weather = weatherLabels[scene.location.weather] || '';
+            const light = lightTypeLabels[scene.illumination.type] || '';
+            const lightDir = lightDirectionLabels[scene.illumination.direction] || '';
+            const style = visualStyleLabels[scene.style.visual] || 'estilo cinematográfico';
+            
+            let prompt = '';
+            
+            // Sujeto
+            if (scene.subject.name || scene.subject.desc) {
+                prompt += shot + ' ';
+                if (scene.subject.name) prompt += scene.subject.name + ' ';
+                if (scene.subject.desc) prompt += scene.subject.desc + ' ';
+            }
+            
+            // Ubicación
+            if (scene.location.space) {
+                prompt += 'en ' + scene.location.space + ' ';
+            }
+            if (weather) prompt += weather + ' ';
+            
+            // Iluminación
+            if (light) prompt += light + ' ';
+            if (lightDir) prompt += 'con ' + lightDir + ' ';
+            
+            // Movimiento de cámara
+            if (motion) prompt += motion + ' ';
+            
+            // Estilo
+            prompt += style + '. ';
+            
+            // Calidad adicional según proveedor
+            if (provider === 'seeddance') {
+                const quality = document.getElementById('sd_quality').value;
+                const theme = document.getElementById('sd_theme').value;
+                prompt += 'Calidad ' + quality + '. ';
+                if (theme !== 'none') prompt += 'Tema: ' + theme + '. ';
+            } else if (provider === 'sora') {
+                prompt += 'Calidad cinematográfica HD, ';
+                prompt += document.getElementById('sora_aspect').value + ' aspect ratio. ';
+            } else if (provider === 'veo') {
+                prompt += 'Professional 8K cinematography, ';
+                prompt += document.getElementById('veo_model').value + '. ';
+            }
+            
+            // Paleta de colores
+            if (scene.style.palette) {
+                prompt += 'Paleta: ' + scene.style.palette + '. ';
+            }
+            
+            // Referencias
+            if (scene.style.references) {
+                prompt += 'Estilo similar a: ' + scene.style.references + '. ';
+            }
+            
+            // Descripción del usuario
+            if (scene.description) {
+                prompt += scene.description;
+            }
+            
+            return prompt.trim();
+        }
+        
+        function updatePreviews() {
+            if (currentSceneIndex < 0) return;
+            
+            document.getElementById('previewSeeddanceText').textContent = generatePrompt('seeddance');
+            document.getElementById('previewSoraText').textContent = generatePrompt('sora');
+            document.getElementById('previewVeoText').textContent = generatePrompt('veo');
+        }
+        
+        // ==================== PROVIDER ====================
+        function changeProvider() {
+            const provider = document.getElementById('providerSelect').value;
+            // Actualizar tabs
+            document.querySelectorAll('.tab-provider').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById('tab-' + provider).classList.add('active');
+        }
+        
+        // ==================== EXPORT ====================
+        function getProjectData() {
+            return {
+                proyecto: {
+                    titulo: 'Mi Proyecto de Video',
+                    proveedor_activo: document.getElementById('providerSelect').value,
+                    configuracion: {
+                        seeddance: {
+                            calidad: document.getElementById('sd_quality').value,
+                            estilo: document.getElementById('sd_style').value,
+                            tema: document.getElementById('sd_theme').value,
+                            enhancements: {
+                                face_enhancement: document.getElementById('sd_face_enhancement').checked,
+                                motion_blur: document.getElementById('sd_motion_blur').checked,
+                                color_grading: document.getElementById('sd_color_grading').checked,
+                                depth_of_field: document.getElementById('sd_depth_of_field').checked
+                            }
+                        },
+                        sora: {
+                            aspect_ratio: document.getElementById('sora_aspect').value,
+                            quality: document.getElementById('sora_quality').value,
+                            variations: document.getElementById('sora_variations').value,
+                            transition_style: document.getElementById('sora_transition').value,
+                            duration: document.getElementById('sora_duration').value,
+                            negative_prompt: document.getElementById('sora_negative').value
+                        },
+                        veo: {
+                            model: document.getElementById('veo_model').value,
+                            aspect_ratio: document.getElementById('veo_aspect').value,
+                            duration: document.getElementById('veo_duration').value,
+                            people: document.getElementById('veo_people').value,
+                            seed: document.getElementById('veo_seed').value,
+                            temperature: document.getElementById('veo_temperature').value,
+                            detail_level: document.getElementById('veo_detail').value,
+                            temporal_consistency: document.getElementById('veo_temporal').value,
+                            motion_smoothness: document.getElementById('veo_motion').value
+                        }
+                    }
+                },
+                escenas: scenes,
+                created_at: new Date().toISOString()
+            };
+        }
+        
+        function exportJSON() {
+            const data = getProjectData();
+            const json = JSON.stringify(data, null, 2);
+            downloadFile(json, 'redactor_escenas.json', 'application/json');
+        }
+        
+        function exportForProvider() {
+            const provider = document.getElementById('providerSelect').value;
+            let data = {};
+            
+            if (provider === 'seeddance') {
+                data = generateSeeddanceExport();
+            } else if (provider === 'sora') {
+                data = generateSoraExport();
+            } else if (provider === 'veo') {
+                data = generateVeoExport();
+            }
+            
+            const json = JSON.stringify(data, null, 2);
+            downloadFile(json, 'video_' + provider + '.json', 'application/json');
+        }
+        
+        function generateSeeddanceExport() {
+            return {
+                proveedor: 'seeddance',
+                version: '1.0',
+                config: {
+                    calidad: document.getElementById('sd_quality').value,
+                    estilo: document.getElementById('sd_style').value,
+                    fps: 30,
+                    duracion_total: scenes.reduce((sum, s) => sum + s.duration, 0),
+                    enhancements: {
+                        face_enhancement: document.getElementById('sd_face_enhancement').checked,
+                        motion_blur: document.getElementById('sd_motion_blur').checked,
+                        color_grading: document.getElementById('sd_color_grading').checked,
+                        depth_of_field: document.getElementById('sd_depth_of_field').checked
+                    }
+                },
+                escenas: scenes.map((scene, index) => ({
+                    id: index + 1,
+                    prompt: generatePrompt('seeddance'),
+                    duracion: scene.duration,
+                    tipo_plano: scene.movement.shot_type,
+                    movimiento_camara: scene.movement.camera_motion,
+                    referencia_imagen: null
+                }))
+            };
+        }
+        
+        function generateSoraExport() {
+            return {
+                version: 'sora-1.0',
+                metadata: {
+                    title: 'Mi Video',
+                    total_duration: scenes.reduce((sum, s) => sum + s.duration, 0),
+                    aspect_ratio: document.getElementById('sora_aspect').value,
+                    visual_style: document.getElementById('sora_quality').value,
+                    quality: document.getElementById('sora_quality').value,
+                    variations: document.getElementById('sora_variations').value,
+                    transition_style: document.getElementById('sora_transition').value,
+                    created_at: new Date().toISOString()
+                },
+                storyboard: scenes.map((scene, index) => ({
+                    scene_number: index + 1,
+                    prompt: generatePrompt('sora'),
+                    duration_seconds: scene.duration,
+                    shot_type: scene.movement.shot_type,
+                    is_keyframe: false,
+                    order: index
+                }))
+            };
+        }
+        
+        function generateVeoExport() {
+            return {
+                vertex_ai_veo: {
+                    model: document.getElementById('veo_model').value,
+                    aspect_ratio: document.getElementById('veo_aspect').value,
+                    people: document.getElementById('veo_people').value,
+                    seed: document.getElementById('veo_seed').value,
+                    temperature: document.getElementById('veo_temperature').value,
+                    detail_level: document.getElementById('veo_detail').value,
+                    temporal_consistency: document.getElementById('veo_temporal').value,
+                    motion_smoothness: document.getElementById('veo_motion').value,
+                    escenas: scenes.map((scene, index) => ({
+                        id: index + 1,
+                        prompt: generatePrompt('veo'),
+                        duration: scene.duration
+                    }))
+                }
+            };
+        }
+        
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type: type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // ==================== IMPORT ====================
+        function importJSON() {
+            document.getElementById('importFile').click();
+        }
+        
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Cargar escenas si existen
+                    if (data.escenas && Array.isArray(data.escenas)) {
+                        scenes = data.escenas;
+                        currentSceneIndex = scenes.length > 0 ? 0 : -1;
+                        renderSceneList();
+                        loadSceneToEditor();
+                        updateTransitions();
+                    }
+                    
+                    // Cargar configuración del proveedor
+                    if (data.proyecto && data.proyecto.configuracion) {
+                        const config = data.proyecto.configuracion;
+                        
+                        // SEEDDANCE
+                        if (config.seeddance) {
+                            document.getElementById('sd_quality').value = config.seeddance.calidad || 'high';
+                            document.getElementById('sd_style').value = config.seeddance.estilo || 'cinematic';
+                            document.getElementById('sd_theme').value = config.seeddance.tema || 'none';
+                            if (config.seeddance.enhancements) {
+                                document.getElementById('sd_face_enhancement').checked = config.seeddance.enhancements.face_enhancement || false;
+                                document.getElementById('sd_motion_blur').checked = config.seeddance.enhancements.motion_blur || false;
+                                document.getElementById('sd_color_grading').checked = config.seeddance.enhancements.color_grading || false;
+                                document.getElementById('sd_depth_of_field').checked = config.seeddance.enhancements.depth_of_field || false;
+                            }
+                        }
+                        
+                        // SORA
+                        if (config.sora) {
+                            document.getElementById('sora_aspect').value = config.sora.aspect_ratio || '16:9';
+                            document.getElementById('sora_quality').value = config.sora.quality || 'hd';
+                            document.getElementById('sora_variations').value = config.sora.variations || 1;
+                            document.getElementById('sora_transition').value = config.sora.transition_style || 'smooth';
+                            document.getElementById('sora_duration').value = config.sora.duration || 20;
+                            document.getElementById('sora_negative').value = config.sora.negative_prompt || '';
+                        }
+                        
+                        // VEO
+                        if (config.veo) {
+                            document.getElementById('veo_model').value = config.veo.model || 'veo-2.1';
+                            document.getElementById('veo_aspect').value = config.veo.aspect_ratio || '16:9';
+                            document.getElementById('veo_duration').value = config.veo.duration || 8;
+                            document.getElementById('veo_people').value = config.veo.people || 1;
+                            document.getElementById('veo_seed').value = config.veo.seed || 'random';
+                            document.getElementById('veo_temperature').value = config.veo.temperature || 0.7;
+                            document.getElementById('veo_detail').value = config.veo.detail_level || 'high';
+                            document.getElementById('veo_temporal').value = config.veo.temporal_consistency || 'high';
+                            document.getElementById('veo_motion').value = config.veo.motion_smoothness || 'high';
+                        }
+                    }
+                    
+                    alert('Proyecto importado correctamente');
+                } catch (err) {
+                    alert('Error al importar: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        // ==================== INIT ====================
+        // Crear una escena inicial
+        addScene();
+    </script>
+</body>
+</html>

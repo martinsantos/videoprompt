@@ -4,5 +4,5 @@
 
 [[redirects]]
   from = "/*"
-  to = "/formulario_avanzado_completo.html"
+  to = "/redactor_escenas.html"
   status = 200
